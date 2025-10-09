@@ -21,6 +21,8 @@ export const err = <T>(error: Error): Result<T> => ({ error, success: false });
 export const log = createConsola({
   level: 4,
   formatOptions: { compact: true },
+  stdout: process.stderr,
+  stderr: process.stderr,
 });
 
 export const onlyOnce = <T>(fn: () => T) => {
