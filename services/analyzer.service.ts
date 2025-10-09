@@ -2,11 +2,16 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import pc from "picocolors";
 import { type Result, err, ok } from "../utils";
-import { SupabaseService, type TableAccessResult } from "./supabase.service";
+import {
+  type RPCFunction,
+  SupabaseService,
+  type TableAccessResult,
+} from "./supabase.service";
 
 export type SchemaAnalysis = {
   tables: string[];
   rpcs: string[];
+  rpcFunctions: RPCFunction[];
   tableAccess: Record<string, TableAccessResult>;
 };
 
@@ -67,6 +72,11 @@ export abstract class AnalyzerService {
         debug,
       );
       const rpcsResult = await SupabaseService.getRPCs(client, schema, debug);
+      const rpcFunctionsResult = await SupabaseService.getRPCsWithParameters(
+        client,
+        schema,
+        debug,
+      );
 
       if (!tablesResult.success || !rpcsResult.success) continue;
 
@@ -82,6 +92,9 @@ export abstract class AnalyzerService {
       schemaDetails[schema] = {
         tables: tablesResult.value,
         rpcs: rpcsResult.value,
+        rpcFunctions: rpcFunctionsResult.success
+          ? rpcFunctionsResult.value
+          : [],
         tableAccess: accessResult.value,
       };
     }
@@ -105,7 +118,6 @@ export abstract class AnalyzerService {
     const jwtInfo = this.decodeJWT(key);
     const metadata = this.extractMetadata(url, debug);
 
-    // Try to get additional metadata from swagger
     const swaggerMetadata = await this.extractSwaggerMetadata(client, debug);
     const enhancedMetadata = { ...metadata, ...swaggerMetadata };
 
@@ -151,13 +163,11 @@ export abstract class AnalyzerService {
 
       if (urlObj.hostname.includes(".supabase.co")) {
         metadata.service = "Supabase";
-        // Extract project ID from hostname (everything before .supabase.co)
+
         const projectId = urlObj.hostname.replace(".supabase.co", "");
         metadata.region = projectId;
       }
-    } catch {
-      // Ignore URL parsing errors
-    }
+    } catch {}
 
     return metadata;
   }
@@ -167,7 +177,6 @@ export abstract class AnalyzerService {
     debug = false,
   ): Promise<Partial<SummaryMetadata>> {
     try {
-      // Try to get swagger info from the public schema
       const swaggerResult = await SupabaseService.getSwagger(
         client,
         "public",
@@ -205,7 +214,6 @@ export abstract class AnalyzerService {
     console.log(pc.bold(pc.cyan("━".repeat(60))));
     console.log();
 
-    // High-level summary
     console.log(pc.bold(pc.yellow("TARGET SUMMARY")));
     console.log(pc.dim("─".repeat(20)));
     console.log(pc.bold("Domain:"), pc.white(result.summary.domain));
@@ -322,9 +330,24 @@ export abstract class AnalyzerService {
       console.log();
 
       console.log(pc.bold("RPCs:"), pc.green(analysis.rpcs.length.toString()));
-      if (analysis.rpcs.length > 0) {
-        analysis.rpcs.forEach((rpc) => {
-          console.log(`  • ${pc.white(rpc)}`);
+      if (analysis.rpcFunctions.length > 0) {
+        analysis.rpcFunctions.forEach((rpc) => {
+          console.log(`  • ${pc.white(rpc.name)}`);
+          if (rpc.parameters.length > 0) {
+            rpc.parameters.forEach((param) => {
+              const required = param.required
+                ? pc.red("(required)")
+                : pc.dim("(optional)");
+              const type = param.format
+                ? `${param.type} (${param.format})`
+                : param.type;
+              console.log(
+                `    - ${pc.cyan(param.name)}: ${pc.yellow(type)} ${required}`,
+              );
+            });
+          } else {
+            console.log(pc.dim("    No parameters"));
+          }
         });
       } else {
         console.log(pc.dim("  No RPCs found"));

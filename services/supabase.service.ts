@@ -20,6 +20,19 @@ export type TableAccessResult = {
   hasData: boolean;
 };
 
+export type RPCParameter = {
+  name: string;
+  type: string;
+  format?: string;
+  required: boolean;
+  description?: string;
+};
+
+export type RPCFunction = {
+  name: string;
+  parameters: RPCParameter[];
+};
+
 export abstract class SupabaseService {
   public static async getSchemas(
     client: SupabaseClient,
@@ -104,6 +117,97 @@ export abstract class SupabaseService {
 
     if (debug) log.debug(`Found ${rpcs.length} RPCs`);
     return ok(rpcs);
+  }
+
+  public static async getRPCsWithParameters(
+    client: SupabaseClient,
+    schema: string,
+    debug = false,
+  ): Promise<Result<RPCFunction[]>> {
+    if (debug) log.debug(`Fetching RPCs with parameters for schema: ${schema}`);
+
+    const swaggerResult = await this.getSwagger(client, schema, debug);
+
+    if (!swaggerResult.success) {
+      return err(swaggerResult.error);
+    }
+
+    const rpcFunctions: RPCFunction[] = [];
+
+    Object.entries(swaggerResult.value.paths).forEach(
+      ([path, methods]: [string, any]) => {
+        if (path.startsWith("/rpc/")) {
+          const rpcName = path.slice(1);
+
+          const postMethod = methods.post; // TODO: is this right?
+          if (postMethod && postMethod.parameters) {
+            const parameters: RPCParameter[] = [];
+
+            postMethod.parameters.forEach((param: any) => {
+              if (
+                param.in === "body" &&
+                param.schema &&
+                param.schema.properties
+              ) {
+                const requiredParams = param.schema.required || [];
+
+                Object.entries(param.schema.properties).forEach(
+                  ([paramName, paramDef]: [string, any]) => {
+                    parameters.push({
+                      name: paramName,
+                      type: paramDef.type || "unknown",
+                      format: paramDef.format,
+                      required: requiredParams.includes(paramName),
+                      description: paramDef.description,
+                    });
+                  },
+                );
+              }
+            });
+
+            rpcFunctions.push({
+              name: rpcName,
+              parameters,
+            });
+          }
+        }
+      },
+    );
+
+    if (debug) log.debug(`Found ${rpcFunctions.length} RPCs with parameters`);
+    return ok(rpcFunctions);
+  }
+
+  public static async callRPC(
+    client: SupabaseClient,
+    schema: string,
+    rpcName: string,
+    args: Record<string, any> = {},
+    debug = false,
+    options: {
+      get?: boolean;
+    } = {
+      get: true,
+    },
+  ): Promise<Result<any>> {
+    if (debug) log.debug(`Calling RPC: ${schema}.${rpcName}`, args);
+
+    try {
+      const { data, error } = await client.rpc(rpcName, args, options);
+
+      if (error) {
+        if (debug) log.debug("RPC error:", error);
+        return err(new Error(`RPC call failed: ${error.message}`));
+      }
+      return ok(data);
+    } catch (error) {
+      if (debug) log.debug("RPC exception:", error);
+      return err(
+        new Error(
+          `RPC call exception: ${error instanceof Error ? error.message : String(error)}`,
+        ),
+      );
+    }
   }
 
   public static async testTableRead(

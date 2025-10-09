@@ -1,4 +1,4 @@
-import { type Result, ok, err, log } from "../utils";
+import { type Result, err, log, ok } from "../utils";
 
 export type ExtractedCredentials = {
   url: string;
@@ -8,8 +8,8 @@ export type ExtractedCredentials = {
 
 export abstract class ExtractorService {
   private static readonly URL_PATTERNS = [
-    /https:\/\/[a-z0-9-]+\.supabase\.co/g,
-    /['"`]https:\/\/[a-z0-9-]+\.supabase\.co['"`]/g,
+    /https:\/\/[a-z0-9-]+\.supabase\.co\/?/g,
+    /['"`]https:\/\/[a-z0-9-]+\.supabase\.co\/?['"`]/g,
   ];
 
   private static readonly KEY_PATTERNS = [
@@ -123,24 +123,22 @@ export abstract class ExtractorService {
   ): Result<ExtractedCredentials> {
     if (debug) log.debug("Extracting Supabase credentials...");
 
-    const urls = this.extractUrls(content);
-    const keys = this.extractKeys(content);
+    const pairs = this.findClosestPairs(content);
 
     if (debug) {
-      log.debug(`Found ${urls.length} potential URLs`);
-      log.debug(`Found ${keys.length} potential keys`);
+      log.debug(`Found ${pairs.length} potential URL-key pairs`);
     }
 
-    if (urls.length === 0) {
-      return err(new Error("No Supabase URL found in content"));
+    if (pairs.length === 0) {
+      return err(new Error("No Supabase URL-key pairs found in content"));
     }
 
-    if (keys.length === 0) {
-      return err(new Error("No Supabase API key found in content"));
+    const pair = pairs[0];
+    if (!pair) {
+      return err(new Error("No valid URL-key pairs found"));
     }
 
-    const url = urls[0]?.replace(/['"`;]/g, "") ?? "";
-    const key = keys[0]?.replace(/['"`;]/g, "") ?? "";
+    const { url, key } = pair;
 
     if (debug) {
       log.debug(`Extracted URL: ${url}`);
@@ -172,29 +170,44 @@ export abstract class ExtractorService {
     return `${base.origin}${basePath}${url}`;
   }
 
-  private static extractUrls(content: string): string[] {
-    const matches = new Set<string>();
+  private static findClosestPairs(
+    content: string,
+  ): Array<{ url: string; key: string; distance: number }> {
+    const urlMatches = this.findAllMatches(content, this.URL_PATTERNS);
+    const keyMatches = this.findAllMatches(content, this.KEY_PATTERNS);
 
-    this.URL_PATTERNS.forEach((pattern) => {
-      const found = content.match(pattern);
-      if (found) {
-        found.forEach((match) => matches.add(match));
+    const pairs: Array<{ url: string; key: string; distance: number }> = [];
+
+    for (const urlMatch of urlMatches) {
+      for (const keyMatch of keyMatches) {
+        const distance = Math.abs(urlMatch.index - keyMatch.index);
+        pairs.push({
+          url: urlMatch.text.replace(/['"`;]/g, ""),
+          key: keyMatch.text.replace(/['"`;]/g, ""),
+          distance,
+        });
       }
-    });
+    }
 
-    return Array.from(matches);
+    return pairs.sort((a, b) => a.distance - b.distance);
   }
 
-  private static extractKeys(content: string): string[] {
-    const matches = new Set<string>();
+  private static findAllMatches(
+    content: string,
+    patterns: RegExp[],
+  ): Array<{ text: string; index: number }> {
+    const matches: Array<{ text: string; index: number }> = [];
 
-    this.KEY_PATTERNS.forEach((pattern) => {
-      const found = content.match(pattern);
-      if (found) {
-        found.forEach((match) => matches.add(match));
+    patterns.forEach((pattern) => {
+      let match;
+      while ((match = pattern.exec(content)) !== null) {
+        matches.push({
+          text: match[0],
+          index: match.index,
+        });
       }
     });
 
-    return Array.from(matches);
+    return matches;
   }
 }
