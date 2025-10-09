@@ -1,4 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+
+
 import {
   SupabaseService,
   type TableAccessResult,
@@ -6,55 +8,68 @@ import {
 import { type Result, ok, err } from "../utils";
 import pc from "picocolors";
 
-export type AnalysisResult = {
-  schemas: string[];
+export type SchemaAnalysis = {
   tables: string[];
   rpcs: string[];
   tableAccess: Record<string, TableAccessResult>;
 };
 
+export type AnalysisResult = {
+  schemas: string[];
+  schemaDetails: Record<string, SchemaAnalysis>;
+};
+
 export abstract class AnalyzerService {
   public static async analyze(
     client: SupabaseClient,
-    schema: string,
+    targetSchema: string | undefined,
     debug = false,
   ): Promise<Result<AnalysisResult>> {
     const schemasResult = await SupabaseService.getSchemas(client, debug);
-    const tablesResult = await SupabaseService.getTables(client, schema, debug);
-    const rpcsResult = await SupabaseService.getRPCs(client, schema, debug);
 
     if (!schemasResult.success) {
       return err(schemasResult.error);
     }
 
-    if (!tablesResult.success) {
-      return err(tablesResult.error);
-    }
+    const schemasToAnalyze = targetSchema
+      ? [targetSchema]
+      : schemasResult.value;
 
-    if (!rpcsResult.success) {
-      return err(rpcsResult.error);
-    }
+    const schemaDetails: Record<string, SchemaAnalysis> = {};
 
-    const accessResult = await SupabaseService.testTablesRead(
-      client,
-      schema,
-      tablesResult.value,
-      debug,
-    );
+    for (const schema of schemasToAnalyze) {
+      const tablesResult = await SupabaseService.getTables(
+        client,
+        schema,
+        debug,
+      );
+      const rpcsResult = await SupabaseService.getRPCs(client, schema, debug);
 
-    if (!accessResult.success) {
-      return err(accessResult.error);
+      if (!tablesResult.success || !rpcsResult.success) continue;
+
+      const accessResult = await SupabaseService.testTablesRead(
+        client,
+        schema,
+        tablesResult.value,
+        debug,
+      );
+
+      if (!accessResult.success) continue;
+
+      schemaDetails[schema] = {
+        tables: tablesResult.value,
+        rpcs: rpcsResult.value,
+        tableAccess: accessResult.value,
+      };
     }
 
     return ok({
       schemas: schemasResult.value,
-      tables: tablesResult.value,
-      rpcs: rpcsResult.value,
-      tableAccess: accessResult.value,
+      schemaDetails,
     });
   }
 
-  public static display(result: AnalysisResult, schema: string): void {
+  public static display(result: AnalysisResult): void {
     console.log();
     console.log(pc.bold(pc.cyan("━".repeat(60))));
     console.log(pc.bold(pc.cyan("  SUPABASE DATABASE ANALYSIS")));
@@ -65,73 +80,71 @@ export abstract class AnalyzerService {
       pc.bold("Schemas discovered:"),
       pc.green(result.schemas.length.toString()),
     );
-    result.schemas.forEach((s) => {
-      const indicator = s === schema ? pc.yellow("→") : " ";
-      console.log(`  ${indicator} ${pc.white(s)}`);
+    console.log();
+
+    Object.entries(result.schemaDetails).forEach(([schema, analysis]) => {
+      console.log(pc.bold(pc.cyan(`Schema: ${schema}`)));
+      console.log();
+
+      const exposedCount = Object.values(analysis.tableAccess).filter(
+        (a) => a.status === "readable",
+      ).length;
+      const deniedCount = Object.values(analysis.tableAccess).filter(
+        (a) => a.status === "denied",
+      ).length;
+      const emptyCount = Object.values(analysis.tableAccess).filter(
+        (a) => a.status === "empty",
+      ).length;
+
+      console.log(
+        pc.bold("Tables:"),
+        pc.green(analysis.tables.length.toString()),
+      );
+      console.log(
+        pc.dim(
+          `  ${exposedCount} exposed • ${emptyCount} empty/protected • ${deniedCount} denied`,
+        ),
+      );
+      console.log();
+
+      if (analysis.tables.length > 0) {
+        analysis.tables.forEach((table) => {
+          const access = analysis.tableAccess[table];
+          let indicator = "";
+          let description = "";
+
+          switch (access?.status) {
+            case "readable":
+              indicator = pc.green("✓");
+              description = pc.dim("(data exposed)");
+              break;
+            case "empty":
+              indicator = pc.yellow("○");
+              description = pc.dim("(0 rows - empty or RLS)");
+              break;
+            case "denied":
+              indicator = pc.red("✗");
+              description = pc.dim("(access denied)");
+              break;
+          }
+
+          console.log(`  ${indicator} ${pc.white(table)} ${description}`);
+        });
+      } else {
+        console.log(pc.dim("  No tables found"));
+      }
+      console.log();
+
+      console.log(pc.bold("RPCs:"), pc.green(analysis.rpcs.length.toString()));
+      if (analysis.rpcs.length > 0) {
+        analysis.rpcs.forEach((rpc) => {
+          console.log(`  • ${pc.white(rpc)}`);
+        });
+      } else {
+        console.log(pc.dim("  No RPCs found"));
+      }
+      console.log();
     });
-    console.log();
-
-    const exposedCount = Object.values(result.tableAccess).filter(
-      (a) => a.status === "readable",
-    ).length;
-    const deniedCount = Object.values(result.tableAccess).filter(
-      (a) => a.status === "denied",
-    ).length;
-    const emptyCount = Object.values(result.tableAccess).filter(
-      (a) => a.status === "empty",
-    ).length;
-
-    console.log(
-      pc.bold(`Tables in '${schema}' schema:`),
-      pc.green(result.tables.length.toString()),
-    );
-    console.log(
-      pc.dim(
-        `  ${exposedCount} exposed • ${emptyCount} empty/protected • ${deniedCount} denied`,
-      ),
-    );
-    console.log();
-
-    if (result.tables.length > 0) {
-      result.tables.forEach((table) => {
-        const access = result.tableAccess[table];
-        let indicator = "";
-        let description = "";
-
-        switch (access?.status) {
-          case "readable":
-            indicator = pc.green("✓");
-            description = pc.dim("(data exposed)");
-            break;
-          case "empty":
-            indicator = pc.yellow("○");
-            description = pc.dim("(0 rows - empty or RLS)");
-            break;
-          case "denied":
-            indicator = pc.red("✗");
-            description = pc.dim("(access denied)");
-            break;
-        }
-
-        console.log(`  ${indicator} ${pc.white(table)} ${description}`);
-      });
-    } else {
-      console.log(pc.dim("  No tables found"));
-    }
-    console.log();
-
-    console.log(
-      pc.bold(`RPCs in '${schema}' schema:`),
-      pc.green(result.rpcs.length.toString()),
-    );
-    if (result.rpcs.length > 0) {
-      result.rpcs.forEach((rpc) => {
-        console.log(`  • ${pc.white(rpc)}`);
-      });
-    } else {
-      console.log(pc.dim("  No RPCs found"));
-    }
-    console.log();
 
     console.log(pc.bold(pc.cyan("━".repeat(60))));
     console.log();

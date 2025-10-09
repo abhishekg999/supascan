@@ -161,4 +161,39 @@ export abstract class SupabaseService {
 
     return ok(accessMap);
   }
+
+  public static async dumpTable(
+    client: SupabaseClient,
+    schema: string,
+    table: string,
+    limit = 10,
+    debug = false,
+  ): Promise<
+    Result<{
+      columns: string[];
+      rows: Record<string, unknown>[];
+      count: number;
+    }>
+  > {
+    if (debug) log.debug(`Dumping table ${schema}.${table}`);
+
+    const { data, error, count } = await client
+      .schema(schema)
+      .from(table)
+      .select("*", { count: "exact" })
+      .limit(limit);
+
+    if (error) {
+      return err(error);
+    }
+
+    const columns =
+      data && data.length > 0 ? Object.keys(data[0] ?? {}) : [];
+
+    return ok({
+      columns,
+      rows: data ?? [],
+      count: count ?? 0,
+    });
+  }
 }
