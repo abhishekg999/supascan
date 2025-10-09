@@ -1,9 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { type Result, ok, err, log } from "../utils";
+import { type Result, err, log, ok } from "../utils";
 
 export type SupabaseSwagger = {
   swagger: string;
   paths: Record<string, unknown>;
+  info?: {
+    title?: string;
+    description?: string;
+    version?: string;
+  };
   [key: string]: unknown;
 };
 
@@ -127,7 +132,8 @@ export abstract class SupabaseService {
       return ok({ status: "readable", accessible: true, hasData: true });
     }
 
-    if (debug) log.debug(`Table ${table} returned 0 rows (empty or RLS blocked)`);
+    if (debug)
+      log.debug(`Table ${table} returned 0 rows (empty or RLS blocked)`);
     return ok({ status: "empty", accessible: true, hasData: false });
   }
 
@@ -187,8 +193,7 @@ export abstract class SupabaseService {
       return err(error);
     }
 
-    const columns =
-      data && data.length > 0 ? Object.keys(data[0] ?? {}) : [];
+    const columns = data && data.length > 0 ? Object.keys(data[0] ?? {}) : [];
 
     return ok({
       columns,

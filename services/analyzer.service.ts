@@ -1,12 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-
-import {
-  SupabaseService,
-  type TableAccessResult,
-} from "./supabase.service";
-import { type Result, ok, err } from "../utils";
 import pc from "picocolors";
+import { type Result, err, ok } from "../utils";
+import { SupabaseService, type TableAccessResult } from "./supabase.service";
 
 export type SchemaAnalysis = {
   tables: string[];
@@ -14,15 +10,42 @@ export type SchemaAnalysis = {
   tableAccess: Record<string, TableAccessResult>;
 };
 
+export type JWTInfo = {
+  iss?: string;
+  aud?: string;
+  exp?: number;
+  iat?: number;
+  sub?: string;
+  role?: string;
+  [key: string]: unknown;
+};
+
+export type SummaryMetadata = {
+  service?: string;
+  region?: string;
+  protocol?: string;
+  port?: string;
+  version?: string;
+  title?: string;
+  description?: string;
+};
+
 export type AnalysisResult = {
   schemas: string[];
   schemaDetails: Record<string, SchemaAnalysis>;
+  summary: {
+    domain: string;
+    jwtInfo?: JWTInfo;
+    metadata?: SummaryMetadata;
+  };
 };
 
 export abstract class AnalyzerService {
   public static async analyze(
     client: SupabaseClient,
     targetSchema: string | undefined,
+    url: string,
+    key: string,
     debug = false,
   ): Promise<Result<AnalysisResult>> {
     const schemasResult = await SupabaseService.getSchemas(client, debug);
@@ -63,10 +86,116 @@ export abstract class AnalyzerService {
       };
     }
 
+    const summary = await this.extractSummary(client, url, key, debug);
+
     return ok({
       schemas: schemasResult.value,
       schemaDetails,
+      summary,
     });
+  }
+
+  private static async extractSummary(
+    client: SupabaseClient,
+    url: string,
+    key: string,
+    debug = false,
+  ): Promise<AnalysisResult["summary"]> {
+    const domain = this.extractDomain(url);
+    const jwtInfo = this.decodeJWT(key);
+    const metadata = this.extractMetadata(url, debug);
+
+    // Try to get additional metadata from swagger
+    const swaggerMetadata = await this.extractSwaggerMetadata(client, debug);
+    const enhancedMetadata = { ...metadata, ...swaggerMetadata };
+
+    return {
+      domain,
+      jwtInfo,
+      metadata: enhancedMetadata,
+    };
+  }
+
+  private static extractDomain(url: string): string {
+    try {
+      const urlObj = new URL(url);
+      return urlObj.hostname;
+    } catch {
+      return url;
+    }
+  }
+
+  private static decodeJWT(key: string): JWTInfo | undefined {
+    try {
+      const parts = key.split(".");
+      if (parts.length !== 3) return undefined;
+
+      const payload = parts[1];
+      if (!payload) return undefined;
+
+      const decoded = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
+      return JSON.parse(decoded) as JWTInfo;
+    } catch {
+      return undefined;
+    }
+  }
+
+  private static extractMetadata(url: string, debug = false): SummaryMetadata {
+    const metadata: SummaryMetadata = {};
+
+    try {
+      const urlObj = new URL(url);
+      metadata.protocol = urlObj.protocol;
+      metadata.port =
+        urlObj.port || (urlObj.protocol === "https:" ? "443" : "80");
+
+      if (urlObj.hostname.includes(".supabase.co")) {
+        metadata.service = "Supabase";
+        // Extract project ID from hostname (everything before .supabase.co)
+        const projectId = urlObj.hostname.replace(".supabase.co", "");
+        metadata.region = projectId;
+      }
+    } catch {
+      // Ignore URL parsing errors
+    }
+
+    return metadata;
+  }
+
+  private static async extractSwaggerMetadata(
+    client: SupabaseClient,
+    debug = false,
+  ): Promise<Partial<SummaryMetadata>> {
+    try {
+      // Try to get swagger info from the public schema
+      const swaggerResult = await SupabaseService.getSwagger(
+        client,
+        "public",
+        debug,
+      );
+
+      if (!swaggerResult.success) {
+        return {};
+      }
+
+      const swagger = swaggerResult.value;
+      const metadata: Partial<SummaryMetadata> = {};
+
+      if (swagger.info && typeof swagger.info === "object") {
+        const info = swagger.info as {
+          title?: string;
+          description?: string;
+          version?: string;
+        };
+        metadata.title = info.title;
+        metadata.description = info.description;
+        metadata.version = info.version;
+      }
+
+      return metadata;
+    } catch {
+      return {};
+    }
   }
 
   public static display(result: AnalysisResult): void {
@@ -76,6 +205,63 @@ export abstract class AnalyzerService {
     console.log(pc.bold(pc.cyan("━".repeat(60))));
     console.log();
 
+    // High-level summary
+    console.log(pc.bold(pc.yellow("TARGET SUMMARY")));
+    console.log(pc.dim("─".repeat(20)));
+    console.log(pc.bold("Domain:"), pc.white(result.summary.domain));
+
+    if (result.summary.metadata?.service) {
+      console.log(
+        pc.bold("Service:"),
+        pc.white(result.summary.metadata.service),
+      );
+    }
+
+    if (result.summary.metadata?.region) {
+      console.log(
+        pc.bold("Project ID:"),
+        pc.white(result.summary.metadata.region),
+      );
+    }
+
+    if (result.summary.metadata?.title) {
+      console.log(pc.bold("Title:"), pc.white(result.summary.metadata.title));
+    }
+
+    if (result.summary.metadata?.version) {
+      console.log(
+        pc.bold("Version:"),
+        pc.white(result.summary.metadata.version),
+      );
+    }
+
+    if (result.summary.jwtInfo) {
+      console.log();
+      console.log(pc.bold(pc.yellow("JWT TOKEN INFO")));
+      console.log(pc.dim("─".repeat(20)));
+
+      if (result.summary.jwtInfo.iss) {
+        console.log(pc.bold("Issuer:"), pc.white(result.summary.jwtInfo.iss));
+      }
+      if (result.summary.jwtInfo.aud) {
+        console.log(pc.bold("Audience:"), pc.white(result.summary.jwtInfo.aud));
+      }
+      if (result.summary.jwtInfo.role) {
+        console.log(pc.bold("Role:"), pc.white(result.summary.jwtInfo.role));
+      }
+      if (result.summary.jwtInfo.exp) {
+        const expDate = new Date(result.summary.jwtInfo.exp * 1000);
+        console.log(pc.bold("Expires:"), pc.white(expDate.toISOString()));
+      }
+      if (result.summary.jwtInfo.iat) {
+        const iatDate = new Date(result.summary.jwtInfo.iat * 1000);
+        console.log(pc.bold("Issued:"), pc.white(iatDate.toISOString()));
+      }
+    }
+
+    console.log();
+    console.log(pc.bold(pc.cyan("DATABASE ANALYSIS")));
+    console.log(pc.dim("─".repeat(20)));
     console.log(
       pc.bold("Schemas discovered:"),
       pc.green(result.schemas.length.toString()),

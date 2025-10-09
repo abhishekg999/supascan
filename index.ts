@@ -1,11 +1,11 @@
-import { createClient } from "@supabase/supabase-js";
 import { Command } from "@commander-js/extra-typings";
-import { VERSION } from "./version";
-import { log, setExperimentalWarnings, experimentalWarning } from "./utils";
+import { createClient } from "@supabase/supabase-js";
+import pc from "picocolors";
 import { AnalyzerService } from "./services/analyzer.service";
 import { ExtractorService } from "./services/extractor.service";
 import { SupabaseService } from "./services/supabase.service";
-import pc from "picocolors";
+import { experimentalWarning, log, setExperimentalWarnings } from "./utils";
+import { VERSION } from "./version";
 
 const program = new Command();
 
@@ -20,7 +20,10 @@ program
     "-x, --extract <url>",
     "Extract credentials from JS file URL (experimental)",
   )
-  .option("--dump <schema.table>", "Dump data from specific table")
+  .option(
+    "--dump <schema.table|schema>",
+    "Dump data from specific table or swagger JSON from schema",
+  )
   .option("--limit <number>", "Limit rows for dump", "10")
   .option("--json", "Output as JSON")
   .option("-d, --debug", "Enable debug mode")
@@ -76,8 +79,27 @@ program
 
     if (options.dump) {
       const parts = options.dump.split(".");
+
+      if (parts.length === 1 && parts[0]) {
+        const schema = parts[0];
+
+        const swaggerResult = await SupabaseService.getSwagger(
+          client,
+          schema,
+          options.debug,
+        );
+
+        if (!swaggerResult.success) {
+          log.error("Failed to get swagger", swaggerResult.error.message);
+          process.exit(1);
+        }
+
+        console.log(JSON.stringify(swaggerResult.value, null, 2));
+        return;
+      }
+
       if (parts.length !== 2 || !parts[0] || !parts[1]) {
-        log.error("Invalid format. Use: schema.table");
+        log.error("Invalid format. Use: schema.table or schema");
         process.exit(1);
       }
 
@@ -106,9 +128,18 @@ program
         console.log(pc.bold(pc.cyan(`  TABLE DUMP: ${schema}.${table}`)));
         console.log(pc.bold(pc.cyan("━".repeat(60))));
         console.log();
-        console.log(pc.bold("Total rows:"), pc.green(dumpResult.value.count.toString()));
-        console.log(pc.bold("Showing:"), pc.green(dumpResult.value.rows.length.toString()));
-        console.log(pc.bold("Columns:"), pc.green(dumpResult.value.columns.length.toString()));
+        console.log(
+          pc.bold("Total rows:"),
+          pc.green(dumpResult.value.count.toString()),
+        );
+        console.log(
+          pc.bold("Showing:"),
+          pc.green(dumpResult.value.rows.length.toString()),
+        );
+        console.log(
+          pc.bold("Columns:"),
+          pc.green(dumpResult.value.columns.length.toString()),
+        );
         console.log();
         console.log(pc.dim(dumpResult.value.columns.join(", ")));
         console.log();
@@ -130,6 +161,8 @@ program
     const analysisResult = await AnalyzerService.analyze(
       client,
       options.schema,
+      url,
+      key,
       options.debug,
     );
 
