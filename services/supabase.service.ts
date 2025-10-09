@@ -186,14 +186,27 @@ export abstract class SupabaseService {
     debug = false,
     options: {
       get?: boolean;
+      explain?: boolean;
     } = {
-      get: true,
+      get: false,
+      explain: false,
     },
   ): Promise<Result<any>> {
     if (debug) log.debug(`Calling RPC: ${schema}.${rpcName}`, args);
 
     try {
-      const { data, error } = await client.rpc(rpcName, args, options);
+      const query = client.rpc(rpcName, args);
+
+      const { data, error } = options.explain
+        ? await query.explain({
+            analyze: true,
+            format: "text",
+            verbose: true,
+            settings: true,
+            wal: true,
+            buffers: true,
+          })
+        : await query;
 
       if (error) {
         if (debug) log.debug("RPC error:", error);

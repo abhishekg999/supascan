@@ -44,6 +44,7 @@ program
   )
   .option("--json", "Output as JSON")
   .option("-d, --debug", "Enable debug mode")
+  .option("--explain", "Show query execution plan")
   .option("--suppress-experimental-warnings", "Suppress experimental warnings")
   .action(async (options) => {
     if (options.suppressExperimentalWarnings) {
@@ -223,6 +224,10 @@ program
         rpcName,
         args,
         options.debug,
+        {
+          get: true,
+          explain: options.explain,
+        },
       );
 
       if (!rpcResult.success) {
@@ -235,11 +240,23 @@ program
       } else {
         console.log();
         console.log(pc.bold(pc.cyan("━".repeat(60))));
-        console.log(pc.bold(pc.cyan(`  RPC RESULT: ${schema}.${rpcName}`)));
+        if (options.explain) {
+          console.log(pc.bold(pc.cyan(`  QUERY PLAN: ${schema}.${rpcName}`)));
+        } else {
+          console.log(pc.bold(pc.cyan(`  RPC RESULT: ${schema}.${rpcName}`)));
+        }
         console.log(pc.bold(pc.cyan("━".repeat(60))));
         console.log();
 
-        if (Array.isArray(rpcResult.value)) {
+        if (options.explain) {
+          console.log(pc.bold("Execution Plan:"));
+          console.log();
+          if (typeof rpcResult.value === "string") {
+            console.log(pc.yellow(rpcResult.value));
+          } else {
+            console.log(JSON.stringify(rpcResult.value, null, 2));
+          }
+        } else if (Array.isArray(rpcResult.value)) {
           console.log(
             pc.bold("Results:"),
             pc.green(rpcResult.value.length.toString()),
