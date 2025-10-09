@@ -1,5 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { SupabaseService } from "./supabase.service";
+import {
+  SupabaseService,
+  type TableAccessResult,
+} from "./supabase.service";
 import { type Result, ok, err } from "../utils";
 import pc from "picocolors";
 
@@ -7,6 +10,7 @@ export type AnalysisResult = {
   schemas: string[];
   tables: string[];
   rpcs: string[];
+  tableAccess: Record<string, TableAccessResult>;
 };
 
 export abstract class AnalyzerService {
@@ -31,10 +35,22 @@ export abstract class AnalyzerService {
       return err(rpcsResult.error);
     }
 
+    const accessResult = await SupabaseService.testTablesRead(
+      client,
+      schema,
+      tablesResult.value,
+      debug,
+    );
+
+    if (!accessResult.success) {
+      return err(accessResult.error);
+    }
+
     return ok({
       schemas: schemasResult.value,
       tables: tablesResult.value,
       rpcs: rpcsResult.value,
+      tableAccess: accessResult.value,
     });
   }
 
@@ -55,13 +71,49 @@ export abstract class AnalyzerService {
     });
     console.log();
 
+    const exposedCount = Object.values(result.tableAccess).filter(
+      (a) => a.status === "readable",
+    ).length;
+    const deniedCount = Object.values(result.tableAccess).filter(
+      (a) => a.status === "denied",
+    ).length;
+    const emptyCount = Object.values(result.tableAccess).filter(
+      (a) => a.status === "empty",
+    ).length;
+
     console.log(
       pc.bold(`Tables in '${schema}' schema:`),
       pc.green(result.tables.length.toString()),
     );
+    console.log(
+      pc.dim(
+        `  ${exposedCount} exposed • ${emptyCount} empty/protected • ${deniedCount} denied`,
+      ),
+    );
+    console.log();
+
     if (result.tables.length > 0) {
       result.tables.forEach((table) => {
-        console.log(`  • ${pc.white(table)}`);
+        const access = result.tableAccess[table];
+        let indicator = "";
+        let description = "";
+
+        switch (access?.status) {
+          case "readable":
+            indicator = pc.green("✓");
+            description = pc.dim("(data exposed)");
+            break;
+          case "empty":
+            indicator = pc.yellow("○");
+            description = pc.dim("(0 rows - empty or RLS)");
+            break;
+          case "denied":
+            indicator = pc.red("✗");
+            description = pc.dim("(access denied)");
+            break;
+        }
+
+        console.log(`  ${indicator} ${pc.white(table)} ${description}`);
       });
     } else {
       console.log(pc.dim("  No tables found"));

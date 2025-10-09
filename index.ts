@@ -15,7 +15,7 @@ program
   .option("-k, --key <key>", "Supabase anon key")
   .option("-s, --schema <schema>", "Schema to analyze", "public")
   .option(
-    "--extract <url>",
+    "-x, --extract <url>",
     "Extract credentials from JS file URL (experimental)",
   )
   .option("--json", "Output as JSON")
