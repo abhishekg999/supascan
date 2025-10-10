@@ -8,7 +8,8 @@
     "lint": "tsc --noEmit",
     "start": "bun run index.ts",
     "format": "prettier --write .",
-    "build": "bun run lint && bun build --compile --minify --outfile dist/supadump ./index.ts"
+    "build": "bun run lint && bun build --compile --minify --outfile dist/supadump ./index.ts",
+    "test": "bun test"
   },
   "devDependencies": {
     "@types/bun": "latest",

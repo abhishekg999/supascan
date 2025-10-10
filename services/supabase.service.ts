@@ -1,4 +1,4 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { CLIContext } from "../context";
 import { type Result, err, log, ok } from "../utils";
 
 export type SupabaseSwagger = {
@@ -35,13 +35,12 @@ export type RPCFunction = {
 
 export abstract class SupabaseService {
   public static async getSchemas(
-    client: SupabaseClient,
-    debug = false,
-    nonexistantSchema = "NONEXISTANT_SCHEMA_THAT_SHOULDNT_EXIST",
+    ctx: CLIContext,
+    nonexistantSchema = "NONEXISTANT_SCHEMA_THAT_SHOULDNT_EXIST"
   ): Promise<Result<string[]>> {
-    if (debug) log.debug("Fetching schemas...");
+    log.debug(ctx, "Fetching schemas...");
 
-    const { data, error } = await client
+    const { data, error } = await ctx.client
       .schema(nonexistantSchema)
       .from("")
       .select();
@@ -56,18 +55,17 @@ export abstract class SupabaseService {
         ?.split(",")
         .map((schema) => schema.trim()) ?? [];
 
-    if (debug) log.debug(`Found ${schemas.length} schemas`);
+    log.debug(ctx, `Found ${schemas.length} schemas`);
     return ok(schemas);
   }
 
   public static async getSwagger(
-    client: SupabaseClient,
-    schema: string,
-    debug = false,
+    ctx: CLIContext,
+    schema: string
   ): Promise<Result<SupabaseSwagger>> {
-    if (debug) log.debug(`Fetching swagger for schema: ${schema}`);
+    log.debug(ctx, `Fetching swagger for schema: ${schema}`);
 
-    const { data, error } = await client.schema(schema).from("").select();
+    const { data, error } = await ctx.client.schema(schema).from("").select();
 
     if (error) {
       return err(error);
@@ -77,13 +75,12 @@ export abstract class SupabaseService {
   }
 
   public static async getTables(
-    client: SupabaseClient,
-    schema: string,
-    debug = false,
+    ctx: CLIContext,
+    schema: string
   ): Promise<Result<string[]>> {
-    if (debug) log.debug(`Fetching tables for schema: ${schema}`);
+    log.debug(ctx, `Fetching tables for schema: ${schema}`);
 
-    const swaggerResult = await this.getSwagger(client, schema, debug);
+    const swaggerResult = await this.getSwagger(ctx, schema);
 
     if (!swaggerResult.success) {
       return err(swaggerResult.error);
@@ -94,18 +91,17 @@ export abstract class SupabaseService {
       .map((key) => key.slice(1))
       .filter((key) => !!key);
 
-    if (debug) log.debug(`Found ${tables.length} tables`);
+    log.debug(ctx, `Found ${tables.length} tables`);
     return ok(tables);
   }
 
   public static async getRPCs(
-    client: SupabaseClient,
-    schema: string,
-    debug = false,
+    ctx: CLIContext,
+    schema: string
   ): Promise<Result<string[]>> {
-    if (debug) log.debug(`Fetching RPCs for schema: ${schema}`);
+    log.debug(ctx, `Fetching RPCs for schema: ${schema}`);
 
-    const swaggerResult = await this.getSwagger(client, schema, debug);
+    const swaggerResult = await this.getSwagger(ctx, schema);
 
     if (!swaggerResult.success) {
       return err(swaggerResult.error);
@@ -115,18 +111,17 @@ export abstract class SupabaseService {
       .filter((key) => key.startsWith("/rpc/"))
       .map((key) => key.slice(1));
 
-    if (debug) log.debug(`Found ${rpcs.length} RPCs`);
+    log.debug(ctx, `Found ${rpcs.length} RPCs`);
     return ok(rpcs);
   }
 
   public static async getRPCsWithParameters(
-    client: SupabaseClient,
-    schema: string,
-    debug = false,
+    ctx: CLIContext,
+    schema: string
   ): Promise<Result<RPCFunction[]>> {
-    if (debug) log.debug(`Fetching RPCs with parameters for schema: ${schema}`);
+    log.debug(ctx, `Fetching RPCs with parameters for schema: ${schema}`);
 
-    const swaggerResult = await this.getSwagger(client, schema, debug);
+    const swaggerResult = await this.getSwagger(ctx, schema);
 
     if (!swaggerResult.success) {
       return err(swaggerResult.error);
@@ -160,7 +155,7 @@ export abstract class SupabaseService {
                       required: requiredParams.includes(paramName),
                       description: paramDef.description,
                     });
-                  },
+                  }
                 );
               }
             });
@@ -171,19 +166,18 @@ export abstract class SupabaseService {
             });
           }
         }
-      },
+      }
     );
 
-    if (debug) log.debug(`Found ${rpcFunctions.length} RPCs with parameters`);
+    log.debug(ctx, `Found ${rpcFunctions.length} RPCs with parameters`);
     return ok(rpcFunctions);
   }
 
   public static async callRPC(
-    client: SupabaseClient,
+    ctx: CLIContext,
     schema: string,
     rpcName: string,
     args: Record<string, any> = {},
-    debug = false,
     options: {
       get?: boolean;
       explain?: boolean;
@@ -191,12 +185,12 @@ export abstract class SupabaseService {
     } = {
       get: false,
       explain: false,
-    },
+    }
   ): Promise<Result<any>> {
-    if (debug) log.debug(`Calling RPC: ${schema}.${rpcName}`, args);
+    log.debug(ctx, `Calling RPC: ${schema}.${rpcName}`, args);
 
     try {
-      let query = client.schema(schema).rpc(rpcName, args);
+      let query = ctx.client.schema(schema).rpc(rpcName, args);
 
       if (options.limit && !options.explain) {
         query = query.limit(options.limit);
@@ -214,69 +208,66 @@ export abstract class SupabaseService {
         : await query;
 
       if (error) {
-        if (debug) log.debug("RPC error:", error);
+        log.debug(ctx, "RPC error:", error);
         return err(new Error(`RPC call failed: ${error.message}`));
       }
       return ok(data);
     } catch (error) {
-      if (debug) log.debug("RPC exception:", error);
+      log.debug(ctx, "RPC exception:", error);
       return err(
         new Error(
-          `RPC call exception: ${error instanceof Error ? error.message : String(error)}`,
-        ),
+          `RPC call exception: ${error instanceof Error ? error.message : String(error)}`
+        )
       );
     }
   }
 
   public static async testTableRead(
-    client: SupabaseClient,
+    ctx: CLIContext,
     schema: string,
-    table: string,
-    debug = false,
+    table: string
   ): Promise<Result<TableAccessResult>> {
-    if (debug) log.debug(`Testing read access for ${schema}.${table}`);
+    log.debug(ctx, `Testing read access for ${schema}.${table}`);
 
-    const { data, error } = await client
+    const { data, error } = await ctx.client
       .schema(schema)
       .from(table)
       .select("*")
       .limit(1);
 
     if (error) {
-      if (debug) log.debug(`Access denied for ${table}: ${error.message}`);
+      log.debug(ctx, `Access denied for ${table}: ${error.message}`);
       return ok({ status: "denied", accessible: false, hasData: false });
     }
 
     const hasData = data && data.length > 0;
 
     if (hasData) {
-      if (debug) log.debug(`Table ${table} is readable with data (EXPOSED)`);
+      log.debug(ctx, `Table ${table} is readable with data (EXPOSED)`);
       return ok({ status: "readable", accessible: true, hasData: true });
     }
 
-    if (debug)
-      log.debug(`Table ${table} returned 0 rows (empty or RLS blocked)`);
+    log.debug(ctx, `Table ${table} returned 0 rows (empty or RLS blocked)`);
     return ok({ status: "empty", accessible: true, hasData: false });
   }
 
   public static async testTablesRead(
-    client: SupabaseClient,
+    ctx: CLIContext,
     schema: string,
-    tables: string[],
-    debug = false,
+    tables: string[]
   ): Promise<Result<Record<string, TableAccessResult>>> {
-    if (debug) log.debug(`Testing read access for ${tables.length} tables`);
+    log.debug(ctx, `Testing read access for ${tables.length} tables`);
 
     const results = await Promise.all(
       tables.map(async (table) => {
-        const result = await this.testTableRead(client, schema, table, debug);
+        const result = await this.testTableRead(ctx, schema, table);
         return {
           table,
           access: result.success
             ? result.value
             : { status: "denied" as const, accessible: false, hasData: false },
         };
-      }),
+      })
     );
 
     const accessMap = results.reduce(
@@ -284,18 +275,17 @@ export abstract class SupabaseService {
         acc[table] = access;
         return acc;
       },
-      {} as Record<string, TableAccessResult>,
+      {} as Record<string, TableAccessResult>
     );
 
     return ok(accessMap);
   }
 
   public static async dumpTable(
-    client: SupabaseClient,
+    ctx: CLIContext,
     schema: string,
     table: string,
-    limit = 10,
-    debug = false,
+    limit = 10
   ): Promise<
     Result<{
       columns: string[];
@@ -303,9 +293,9 @@ export abstract class SupabaseService {
       count: number;
     }>
   > {
-    if (debug) log.debug(`Dumping table ${schema}.${table}`);
+    log.debug(ctx, `Dumping table ${schema}.${table}`);
 
-    const { data, error, count } = await client
+    const { data, error, count } = await ctx.client
       .schema(schema)
       .from(table)
       .select("*", { count: "exact" })

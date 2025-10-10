@@ -1,3 +1,4 @@
+import type { CLIContext } from "../context";
 import { type Result, err, log, ok } from "../utils";
 
 export type ExtractedCredentials = {
@@ -27,24 +28,24 @@ export abstract class ExtractorService {
 
   public static async extractFromUrl(
     url: string,
-    debug = false,
+    ctx: CLIContext
   ): Promise<Result<ExtractedCredentials>> {
-    if (debug) log.debug(`Fetching content from: ${url}`);
+    log.debug(ctx, `Fetching content from: ${url}`);
 
     const response = await fetch(url);
 
     if (!response.ok) {
       return err(
         new Error(
-          `Failed to fetch URL: ${response.status} ${response.statusText}`,
-        ),
+          `Failed to fetch URL: ${response.status} ${response.statusText}`
+        )
       );
     }
 
     const content = await response.text();
     const contentType = response.headers.get("content-type") ?? "";
 
-    if (debug) log.debug(`Fetched ${content.length} bytes (${contentType})`);
+    log.debug(ctx, `Fetched ${content.length} bytes (${contentType})`);
 
     const isHtml =
       contentType.includes("text/html") ||
@@ -56,25 +57,25 @@ export abstract class ExtractorService {
       contentType.includes("ecmascript");
 
     if (isJs) {
-      return this.extractFromContent(content, debug, url);
+      return this.extractFromContent(content, ctx, url);
     }
 
     if (isHtml) {
-      return await this.extractFromHtml(content, url, debug);
+      return await this.extractFromHtml(content, url, ctx);
     }
 
-    return this.extractFromContent(content, debug, url);
+    return this.extractFromContent(content, ctx, url);
   }
 
   public static async extractFromHtml(
     html: string,
     baseUrl: string,
-    debug = false,
+    ctx: CLIContext
   ): Promise<Result<ExtractedCredentials>> {
-    if (debug) log.debug("Detected HTML content, searching for JS files...");
+    log.debug(ctx, "Detected HTML content, searching for JS files...");
 
     const inlineScripts = Array.from(html.matchAll(this.INLINE_SCRIPT_PATTERN));
-    if (debug) log.debug(`Found ${inlineScripts.length} inline scripts`);
+    log.debug(ctx, `Found ${inlineScripts.length} inline scripts`);
 
     for (const match of inlineScripts) {
       const scriptContent = match[1];
@@ -82,36 +83,36 @@ export abstract class ExtractorService {
 
       const result = this.extractFromContent(
         scriptContent,
-        false,
-        "inline script",
+        ctx,
+        "inline script"
       );
       if (result.success) {
-        if (debug) log.debug("Found credentials in inline script");
+        log.debug(ctx, "Found credentials in inline script");
         return result;
       }
     }
 
     const scriptSrcs = Array.from(html.matchAll(this.SCRIPT_SRC_PATTERN));
-    if (debug) log.debug(`Found ${scriptSrcs.length} external scripts`);
+    log.debug(ctx, `Found ${scriptSrcs.length} external scripts`);
 
     for (const match of scriptSrcs) {
       const scriptSrc = match[1];
       if (!scriptSrc) continue;
 
       const scriptUrl = this.resolveUrl(scriptSrc, baseUrl);
-      if (debug) log.debug(`Checking script: ${scriptUrl}`);
+      log.debug(ctx, `Checking script: ${scriptUrl}`);
 
       const response = await fetch(scriptUrl);
       if (!response.ok) {
-        if (debug) log.debug(`Failed to fetch ${scriptUrl}`);
+        log.debug(ctx, `Failed to fetch ${scriptUrl}`);
         continue;
       }
 
       const content = await response.text();
-      const result = this.extractFromContent(content, false, scriptUrl);
+      const result = this.extractFromContent(content, ctx, scriptUrl);
 
       if (result.success) {
-        if (debug) log.debug(`Found credentials in ${scriptUrl}`);
+        log.debug(ctx, `Found credentials in ${scriptUrl}`);
         return result;
       }
     }
@@ -121,10 +122,10 @@ export abstract class ExtractorService {
 
   public static extractFromContent(
     content: string,
-    debug = false,
-    source?: string,
+    ctx: CLIContext,
+    source?: string
   ): Result<ExtractedCredentials> {
-    if (debug) log.debug("Extracting Supabase credentials...");
+    log.debug(ctx, "Extracting Supabase credentials...");
 
     // First, try to find createBrowserClient pattern (most specific)
     const createBrowserClientMatch =
@@ -134,11 +135,9 @@ export abstract class ExtractorService {
       const key = createBrowserClientMatch[2];
 
       if (url && key) {
-        if (debug) {
-          log.debug("Found createBrowserClient pattern");
-          log.debug(`Extracted URL: ${url}`);
-          log.debug(`Extracted key: ${key.substring(0, 20)}...`);
-        }
+        log.debug(ctx, "Found createBrowserClient pattern");
+        log.debug(ctx, `Extracted URL: ${url}`);
+        log.debug(ctx, `Extracted key: ${key.substring(0, 20)}...`);
 
         return ok({ url, key, source });
       }
@@ -147,9 +146,7 @@ export abstract class ExtractorService {
     // Fallback to the original closest pairs method
     const pairs = this.findClosestPairs(content);
 
-    if (debug) {
-      log.debug(`Found ${pairs.length} potential URL-key pairs`);
-    }
+    log.debug(ctx, `Found ${pairs.length} potential URL-key pairs`);
 
     if (pairs.length === 0) {
       return err(new Error("No Supabase URL-key pairs found in content"));
@@ -162,10 +159,8 @@ export abstract class ExtractorService {
 
     const { url, key } = pair;
 
-    if (debug) {
-      log.debug(`Extracted URL: ${url}`);
-      log.debug(`Extracted key: ${key.substring(0, 20)}...`);
-    }
+    log.debug(ctx, `Extracted URL: ${url}`);
+    log.debug(ctx, `Extracted key: ${key.substring(0, 20)}...`);
 
     return ok({ url, key, source });
   }
@@ -187,13 +182,13 @@ export abstract class ExtractorService {
 
     const basePath = base.pathname.substring(
       0,
-      base.pathname.lastIndexOf("/") + 1,
+      base.pathname.lastIndexOf("/") + 1
     );
     return `${base.origin}${basePath}${url}`;
   }
 
   private static findClosestPairs(
-    content: string,
+    content: string
   ): Array<{ url: string; key: string; distance: number }> {
     const urlMatches = this.findAllMatches(content, this.URL_PATTERNS);
     const keyMatches = this.findAllMatches(content, this.KEY_PATTERNS);
@@ -216,7 +211,7 @@ export abstract class ExtractorService {
 
   private static findAllMatches(
     content: string,
-    patterns: RegExp[],
+    patterns: RegExp[]
   ): Array<{ text: string; index: number }> {
     const matches: Array<{ text: string; index: number }> = [];
 

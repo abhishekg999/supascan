@@ -1,4 +1,5 @@
 import { createConsola } from "consola";
+import type { CLIContext } from "./context";
 
 export type Ok<T> = {
   value: T;
@@ -18,12 +19,25 @@ export const ok = <T>(value: T): Result<T> => ({ value, success: true });
 
 export const err = <T>(error: Error): Result<T> => ({ error, success: false });
 
-export const log = createConsola({
+const baseLogger = createConsola({
   level: 4,
   formatOptions: { compact: true },
   stdout: process.stderr,
   stderr: process.stderr,
 });
+
+export const log = {
+  debug: (ctx: CLIContext, message: any, ...args: any[]) => {
+    if (ctx.debug) {
+      baseLogger.debug(message, ...args);
+    }
+  },
+  info: (message: any, ...args: any[]) => baseLogger.info(message, ...args),
+  success: (message: any, ...args: any[]) =>
+    baseLogger.success(message, ...args),
+  warn: (message: any, ...args: any[]) => baseLogger.warn(message, ...args),
+  error: (message: any, ...args: any[]) => baseLogger.error(message, ...args),
+};
 
 export const onlyOnce = <T>(fn: () => T) => {
   let result = false;
@@ -51,13 +65,13 @@ export const parseRPCArgs = (argsString: string): Record<string, any> => {
           throw new Error(`Environment variable ${varName} not found`);
         }
         return JSON.stringify(envValue);
-      },
+      }
     );
 
     return JSON.parse(processedString);
   } catch (error) {
     throw new Error(
-      `Failed to parse RPC arguments: ${error instanceof Error ? error.message : String(error)}`,
+      `Failed to parse RPC arguments: ${error instanceof Error ? error.message : String(error)}`
     );
   }
 };
@@ -71,7 +85,7 @@ export const setExperimentalWarnings = (suppress: boolean) => {
 export const experimentalWarning = onlyOnce(() => {
   if (!suppressExperimentalWarnings) {
     log.warn(
-      "This feature is experimental and may have bugs. You can suppress this with --suppress-experimental-warnings.",
+      "This feature is experimental and may have bugs. You can suppress this with --suppress-experimental-warnings."
     );
   }
 });
