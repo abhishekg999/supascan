@@ -46,7 +46,7 @@ export type AnalysisResult = {
 export abstract class AnalyzerService {
   public static async analyze(
     ctx: CLIContext,
-    targetSchema: string | undefined
+    targetSchema: string | undefined,
   ): Promise<Result<AnalysisResult>> {
     const schemasResult = await SupabaseService.getSchemas(ctx);
 
@@ -65,7 +65,7 @@ export abstract class AnalyzerService {
       const rpcsResult = await SupabaseService.getRPCs(ctx, schema);
       const rpcFunctionsResult = await SupabaseService.getRPCsWithParameters(
         ctx,
-        schema
+        schema,
       );
 
       if (!tablesResult.success || !rpcsResult.success) continue;
@@ -73,7 +73,7 @@ export abstract class AnalyzerService {
       const accessResult = await SupabaseService.testTablesRead(
         ctx,
         schema,
-        tablesResult.value
+        tablesResult.value,
       );
 
       if (!accessResult.success) continue;
@@ -98,7 +98,7 @@ export abstract class AnalyzerService {
   }
 
   private static async extractSummary(
-    ctx: CLIContext
+    ctx: CLIContext,
   ): Promise<AnalysisResult["summary"]> {
     const domain = this.extractDomain(ctx.url);
     const jwtInfo = this.decodeJWT(ctx.key);
@@ -159,7 +159,7 @@ export abstract class AnalyzerService {
   }
 
   private static async extractSwaggerMetadata(
-    ctx: CLIContext
+    ctx: CLIContext,
   ): Promise<Partial<SummaryMetadata>> {
     try {
       const swaggerResult = await SupabaseService.getSwagger(ctx, "public");

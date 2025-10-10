@@ -28,10 +28,11 @@ export const createMockSupabaseClient = () => {
 };
 
 export const createMockCLIContext = (
-  overrides: Partial<CLIContext> = {}
+  overrides: Partial<CLIContext> = {},
 ): CLIContext => ({
   debug: false,
   json: false,
+  html: false,
   suppressExperimentalWarnings: false,
   url: "https://test.supabase.co",
   key: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test.test",

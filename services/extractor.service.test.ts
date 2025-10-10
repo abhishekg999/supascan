@@ -33,7 +33,7 @@ describe("ExtractorService", () => {
       if (result.success) {
         expect(result.value.url).toBe("https://test.supabase.co");
         expect(result.value.key).toBe(
-          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test.test"
+          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test.test",
         );
       }
     });
@@ -51,7 +51,7 @@ describe("ExtractorService", () => {
       if (result.success) {
         expect(result.value.url).toBe("https://test.supabase.co");
         expect(result.value.key).toBe(
-          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test.test"
+          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test.test",
         );
       }
     });
@@ -65,7 +65,7 @@ describe("ExtractorService", () => {
       expect(result.success).toBe(false);
       if (!result.success) {
         expect(result.error.message).toBe(
-          "No Supabase URL-key pairs found in content"
+          "No Supabase URL-key pairs found in content",
         );
       }
     });
@@ -90,7 +90,7 @@ describe("ExtractorService", () => {
       const ctx = createMockCLIContext();
       const result = await ExtractorService.extractFromUrl(
         "https://example.com/app.js",
-        ctx
+        ctx,
       );
 
       expect(result.success).toBe(true);
@@ -120,7 +120,7 @@ describe("ExtractorService", () => {
       const ctx = createMockCLIContext();
       const result = await ExtractorService.extractFromUrl(
         "https://example.com/index.html",
-        ctx
+        ctx,
       );
 
       expect(result.success).toBe(true);
@@ -161,7 +161,7 @@ describe("ExtractorService", () => {
       const ctx = createMockCLIContext();
       const result = await ExtractorService.extractFromUrl(
         "https://example.com/index.html",
-        ctx
+        ctx,
       );
 
       expect(result.success).toBe(true);
@@ -182,7 +182,7 @@ describe("ExtractorService", () => {
       const ctx = createMockCLIContext();
       const result = await ExtractorService.extractFromUrl(
         "https://example.com/missing.html",
-        ctx
+        ctx,
       );
 
       expect(result.success).toBe(false);

@@ -4,11 +4,17 @@ import {
   AnalyzerService,
   type AnalysisResult,
 } from "../services/analyzer.service";
-import { log } from "../utils";
+import { HtmlRendererService } from "../services/html-renderer.service";
+import {
+  generateTempFilePath,
+  log,
+  openInBrowser,
+  writeHtmlFile,
+} from "../utils";
 
 export async function executeAnalyzeCommand(
   ctx: CLIContext,
-  options: { schema?: string }
+  options: { schema?: string },
 ): Promise<void> {
   const analysisResult = await AnalyzerService.analyze(ctx, options.schema);
 
@@ -19,6 +25,14 @@ export async function executeAnalyzeCommand(
 
   if (ctx.json) {
     console.log(JSON.stringify(analysisResult.value, null, 2));
+  } else if (ctx.html) {
+    const htmlContent = HtmlRendererService.generateHtmlReport(
+      analysisResult.value,
+    );
+    const filePath = generateTempFilePath();
+    writeHtmlFile(filePath, htmlContent);
+    openInBrowser(filePath);
+    log.success(`HTML report generated: ${filePath}`);
   } else {
     displayAnalysisResult(analysisResult.value);
   }
@@ -42,7 +56,7 @@ function displayAnalysisResult(result: AnalysisResult): void {
   if (result.summary.metadata?.region) {
     console.log(
       pc.bold("Project ID:"),
-      pc.white(result.summary.metadata.region)
+      pc.white(result.summary.metadata.region),
     );
   }
 
@@ -83,7 +97,7 @@ function displayAnalysisResult(result: AnalysisResult): void {
   console.log(pc.dim("─".repeat(20)));
   console.log(
     pc.bold("Schemas discovered:"),
-    pc.green(result.schemas.length.toString())
+    pc.green(result.schemas.length.toString()),
   );
   console.log();
 
@@ -92,23 +106,23 @@ function displayAnalysisResult(result: AnalysisResult): void {
     console.log();
 
     const exposedCount = Object.values(analysis.tableAccess).filter(
-      (a) => a.status === "readable"
+      (a) => a.status === "readable",
     ).length;
     const deniedCount = Object.values(analysis.tableAccess).filter(
-      (a) => a.status === "denied"
+      (a) => a.status === "denied",
     ).length;
     const emptyCount = Object.values(analysis.tableAccess).filter(
-      (a) => a.status === "empty"
+      (a) => a.status === "empty",
     ).length;
 
     console.log(
       pc.bold("Tables:"),
-      pc.green(analysis.tables.length.toString())
+      pc.green(analysis.tables.length.toString()),
     );
     console.log(
       pc.dim(
-        `  ${exposedCount} exposed • ${emptyCount} empty/protected • ${deniedCount} denied`
-      )
+        `  ${exposedCount} exposed • ${emptyCount} empty/protected • ${deniedCount} denied`,
+      ),
     );
     console.log();
 
@@ -153,7 +167,7 @@ function displayAnalysisResult(result: AnalysisResult): void {
               ? `${param.type} (${param.format})`
               : param.type;
             console.log(
-              `    - ${pc.cyan(param.name)}: ${pc.yellow(type)} ${required}`
+              `    - ${pc.cyan(param.name)}: ${pc.yellow(type)} ${required}`,
             );
           });
         } else {

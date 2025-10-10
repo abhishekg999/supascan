@@ -17,27 +17,34 @@ program
   .option("-s, --schema <schema>", "Schema to analyze (default: all schemas)")
   .option(
     "-x, --extract <url>",
-    "Extract credentials from JS file URL (experimental)"
+    "Extract credentials from JS file URL (experimental)",
   )
   .option(
     "--dump <schema.table|schema>",
-    "Dump data from specific table or swagger JSON from schema"
+    "Dump data from specific table or swagger JSON from schema",
   )
   .option("--limit <number>", "Limit rows for dump or RPC results", "10")
   .option(
     "--rpc <schema.rpc_name>",
-    "Call an RPC function (read-only operations only)"
+    "Call an RPC function (read-only operations only)",
   )
   .option(
     "--args <json>",
-    "JSON arguments for RPC call (use $VAR for environment variables)"
+    "JSON arguments for RPC call (use $VAR for environment variables)",
   )
   .option("--json", "Output as JSON")
+  .option("--html", "Generate HTML report")
   .option("-d, --debug", "Enable debug mode")
   .option("--explain", "Show query execution plan")
   .option("--suppress-experimental-warnings", "Suppress experimental warnings")
   .action(async (options) => {
     try {
+      // Check for mutual exclusivity of json and html
+      if (options.json && options.html) {
+        log.error("Cannot use --json and --html together. Please choose one.");
+        process.exit(1);
+      }
+
       if (options.suppressExperimentalWarnings) {
         setExperimentalWarnings(true);
       }
@@ -76,7 +83,7 @@ program
     } catch (error) {
       log.error(
         "Command failed",
-        error instanceof Error ? error.message : String(error)
+        error instanceof Error ? error.message : String(error),
       );
       process.exit(1);
     }

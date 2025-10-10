@@ -1,4 +1,8 @@
+import { spawn } from "child_process";
 import { createConsola } from "consola";
+import { writeFileSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
 import type { CLIContext } from "./context";
 
 export type Ok<T> = {
@@ -65,13 +69,13 @@ export const parseRPCArgs = (argsString: string): Record<string, any> => {
           throw new Error(`Environment variable ${varName} not found`);
         }
         return JSON.stringify(envValue);
-      }
+      },
     );
 
     return JSON.parse(processedString);
   } catch (error) {
     throw new Error(
-      `Failed to parse RPC arguments: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to parse RPC arguments: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
 };
@@ -85,7 +89,39 @@ export const setExperimentalWarnings = (suppress: boolean) => {
 export const experimentalWarning = onlyOnce(() => {
   if (!suppressExperimentalWarnings) {
     log.warn(
-      "This feature is experimental and may have bugs. You can suppress this with --suppress-experimental-warnings."
+      "This feature is experimental and may have bugs. You can suppress this with --suppress-experimental-warnings.",
     );
   }
 });
+
+export const generateTempFilePath = (): string => {
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+  return join(tmpdir(), `supadump-${timestamp}.html`);
+};
+
+export const writeHtmlFile = (filePath: string, content: string): void => {
+  writeFileSync(filePath, content, "utf8");
+};
+
+export const openInBrowser = (filePath: string): void => {
+  const platform = process.platform;
+  let command: string;
+  let args: string[];
+
+  switch (platform) {
+    case "darwin":
+      command = "open";
+      args = [filePath];
+      break;
+    case "win32":
+      command = "start";
+      args = [filePath];
+      break;
+    default:
+      command = "xdg-open";
+      args = [filePath];
+      break;
+  }
+
+  spawn(command, args, { detached: true, stdio: "ignore" });
+};

@@ -8,7 +8,7 @@ export async function executeDumpCommand(
   options: {
     dump: string;
     limit: string;
-  }
+  },
 ): Promise<void> {
   const parts = options.dump.split(".");
 
@@ -72,7 +72,7 @@ function displayTableDumpResult(
     columns: string[];
     rows: Record<string, unknown>[];
     count: number;
-  }
+  },
 ): void {
   console.log();
   console.log(pc.bold(pc.cyan("━".repeat(60))));

@@ -207,7 +207,7 @@ describe("SupabaseService", () => {
       const result = await SupabaseService.testTableRead(
         ctx,
         "public",
-        "users"
+        "users",
       );
 
       expect(result.success).toBe(true);
@@ -238,7 +238,7 @@ describe("SupabaseService", () => {
       const result = await SupabaseService.testTableRead(
         ctx,
         "public",
-        "users"
+        "users",
       );
 
       expect(result.success).toBe(true);
@@ -269,7 +269,7 @@ describe("SupabaseService", () => {
       const result = await SupabaseService.testTableRead(
         ctx,
         "public",
-        "users"
+        "users",
       );
 
       expect(result.success).toBe(true);
@@ -307,7 +307,7 @@ describe("SupabaseService", () => {
         ctx,
         "public",
         "users",
-        10
+        10,
       );
 
       expect(result.success).toBe(true);
@@ -338,7 +338,7 @@ describe("SupabaseService", () => {
         ctx,
         "public",
         "users",
-        10
+        10,
       );
 
       expect(result.success).toBe(true);

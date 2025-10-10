@@ -14,7 +14,7 @@ export async function executeRPCCommand(
     args?: string;
     limit: string;
     explain?: boolean;
-  }
+  },
 ): Promise<void> {
   const parts = options.rpc.split(".");
 
@@ -28,7 +28,7 @@ export async function executeRPCCommand(
 
   const rpcFunctionsResult = await SupabaseService.getRPCsWithParameters(
     ctx,
-    schema
+    schema,
   );
 
   let rpcFunction: RPCFunction | null = null;
@@ -40,7 +40,7 @@ export async function executeRPCCommand(
   } else {
     log.warn(
       "Failed to get RPC functions from schema, proceeding without validation",
-      rpcFunctionsResult.error.message
+      rpcFunctionsResult.error.message,
     );
   }
 
@@ -55,28 +55,28 @@ export async function executeRPCCommand(
   } catch (error) {
     log.error(
       "Failed to parse RPC arguments",
-      error instanceof Error ? error.message : String(error)
+      error instanceof Error ? error.message : String(error),
     );
     process.exit(1);
   }
 
   if (rpcFunction) {
     const requiredParams = rpcFunction.parameters.filter(
-      (p: RPCParameter) => p.required
+      (p: RPCParameter) => p.required,
     );
     const missingParams = requiredParams.filter(
-      (p: RPCParameter) => !(p.name in args)
+      (p: RPCParameter) => !(p.name in args),
     );
 
     if (missingParams.length > 0) {
       log.error(
-        `Missing required parameters: ${missingParams.map((p: RPCParameter) => p.name).join(", ")}`
+        `Missing required parameters: ${missingParams.map((p: RPCParameter) => p.name).join(", ")}`,
       );
       process.exit(1);
     }
   } else {
     log.warn(
-      "Skipping parameter validation due to schema introspection failure"
+      "Skipping parameter validation due to schema introspection failure",
     );
   }
 
@@ -101,7 +101,7 @@ export async function executeRPCCommand(
 function displayRPCHelp(
   schema: string,
   rpcName: string,
-  rpcFunction: RPCFunction | null
+  rpcFunction: RPCFunction | null,
 ): void {
   console.log();
   console.log(pc.bold(pc.cyan("━".repeat(60))));
@@ -127,8 +127,8 @@ function displayRPCHelp(
     console.log(pc.bold("Usage:"));
     console.log(
       pc.dim(
-        `supadump --rpc "${schema}.${rpcName}" --args '{"param1": "value1", "param2": "value2"}'`
-      )
+        `supadump --rpc "${schema}.${rpcName}" --args '{"param1": "value1", "param2": "value2"}'`,
+      ),
     );
   } else if (rpcFunction) {
     console.log(pc.dim("No parameters required"));
@@ -138,21 +138,21 @@ function displayRPCHelp(
   } else {
     console.log(
       pc.yellow(
-        "⚠️  Schema introspection failed - parameter information unavailable"
-      )
+        "⚠️  Schema introspection failed - parameter information unavailable",
+      ),
     );
     console.log();
     console.log(pc.bold("Usage:"));
     console.log(
       pc.dim(
-        `supadump --rpc "${schema}.${rpcName}" --args '{"param1": "value1"}'`
-      )
+        `supadump --rpc "${schema}.${rpcName}" --args '{"param1": "value1"}'`,
+      ),
     );
     console.log();
     console.log(
       pc.dim(
-        "Note: You can still call the RPC, but parameter validation is disabled"
-      )
+        "Note: You can still call the RPC, but parameter validation is disabled",
+      ),
     );
   }
   console.log();
@@ -164,7 +164,7 @@ function displayRPCResult(
   schema: string,
   rpcName: string,
   result: any,
-  explain?: boolean
+  explain?: boolean,
 ): void {
   console.log();
   console.log(pc.bold(pc.cyan("━".repeat(60))));

@@ -75,10 +75,10 @@ describe("AnalyzerService", () => {
           "/rpc/get_user",
         ]);
         expect(result.value.schemaDetails.public?.tableAccess).toHaveProperty(
-          "users"
+          "users",
         );
         expect(result.value.schemaDetails.public?.tableAccess).toHaveProperty(
-          "posts"
+          "posts",
         );
       }
     });
@@ -114,7 +114,7 @@ describe("AnalyzerService", () => {
     test("parses URL correctly", () => {
       const analyzer = AnalyzerService as any;
       expect(analyzer.extractDomain("https://test.supabase.co")).toBe(
-        "test.supabase.co"
+        "test.supabase.co",
       );
       expect(analyzer.extractDomain("http://localhost:3000")).toBe("localhost");
     });
@@ -159,7 +159,7 @@ describe("AnalyzerService", () => {
       const analyzer = AnalyzerService as any;
       const result = analyzer.extractMetadata(
         "https://test.supabase.co",
-        false
+        false,
       );
 
       expect(result).toEqual({
