@@ -6,7 +6,7 @@
   "module": "index.ts",
   "type": "module",
   "bin": {
-    "supascan": "./index.ts"
+    "supascan": "index.ts"
   },
   "files": [
     "index.ts",
