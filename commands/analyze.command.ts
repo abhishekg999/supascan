@@ -28,6 +28,8 @@ export async function executeAnalyzeCommand(
   } else if (ctx.html) {
     const htmlContent = HtmlRendererService.generateHtmlReport(
       analysisResult.value,
+      ctx.url,
+      ctx.key,
     );
     const filePath = generateTempFilePath();
     writeHtmlFile(filePath, htmlContent);

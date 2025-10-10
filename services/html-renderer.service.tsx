@@ -1,0 +1,959 @@
+import type { AnalysisResult } from "./analyzer.service";
+
+function TargetSummary({
+  domain,
+  url,
+  key,
+  metadata,
+  jwtInfo,
+}: {
+  domain: string;
+  url: string;
+  key: string;
+  metadata?: any;
+  jwtInfo?: any;
+}) {
+  return (
+    <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8 fade-in">
+      <h2 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+        <svg
+          class="w-5 h-5 mr-2 text-supabase-green"
+          fill="currentColor"
+          viewBox="0 0 20 20"
+        >
+          <path
+            fillRule="evenodd"
+            d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 4a1 1 0 011-1h12a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1V8z"
+            clipRule="evenodd"
+          ></path>
+        </svg>
+        Target Summary
+      </h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="text-sm font-medium text-gray-500">Domain</label>
+          <p class="text-lg font-semibold text-gray-900">{domain}</p>
+        </div>
+        {MetadataDisplay({ metadata })}
+      </div>
+      {JWTInfoDisplay({ jwtInfo })}
+      {APICredentialsDisplay({ url, key })}
+    </section>
+  );
+}
+
+function MetadataDisplay({ metadata }: { metadata?: any }) {
+  if (!metadata) return "";
+
+  const metadataItems = [];
+  if (metadata.service)
+    metadataItems.push({ label: "Service", value: metadata.service });
+  if (metadata.region)
+    metadataItems.push({ label: "Project ID", value: metadata.region });
+  if (metadata.title)
+    metadataItems.push({ label: "Title", value: metadata.title });
+  if (metadata.version)
+    metadataItems.push({ label: "Version", value: metadata.version });
+
+  return (
+    <>
+      {metadataItems.map((item) => (
+        <div>
+          <label class="text-sm font-medium text-gray-500">{item.label}</label>
+          <p class="text-lg font-semibold text-gray-900">{item.value}</p>
+        </div>
+      ))}
+    </>
+  );
+}
+
+function JWTInfoDisplay({ jwtInfo }: { jwtInfo?: any }) {
+  if (!jwtInfo) return "";
+
+  return (
+    <div class="mt-6 pt-6 border-t border-gray-200">
+      <h3 class="text-lg font-medium text-gray-900 mb-3">
+        JWT Token Information
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {jwtInfo.iss && (
+          <div>
+            <label class="text-sm font-medium text-gray-500">Issuer</label>
+            <p class="text-sm text-gray-900">{jwtInfo.iss}</p>
+          </div>
+        )}
+        {jwtInfo.aud && (
+          <div>
+            <label class="text-sm font-medium text-gray-500">Audience</label>
+            <p class="text-sm text-gray-900">{jwtInfo.aud}</p>
+          </div>
+        )}
+        {jwtInfo.role && (
+          <div>
+            <label class="text-sm font-medium text-gray-500">Role</label>
+            <p class="text-sm text-gray-900">{jwtInfo.role}</p>
+          </div>
+        )}
+        {jwtInfo.exp && (
+          <div>
+            <label class="text-sm font-medium text-gray-500">Expires</label>
+            <p class="text-sm text-gray-900">
+              {new Date(jwtInfo.exp * 1000).toISOString()}
+            </p>
+          </div>
+        )}
+        {jwtInfo.iat && (
+          <div>
+            <label class="text-sm font-medium text-gray-500">Issued</label>
+            <p class="text-sm text-gray-900">
+              {new Date(jwtInfo.iat * 1000).toISOString()}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function APICredentialsDisplay({ url, key }: { url: string; key: string }) {
+  return (
+    <div class="mt-6 pt-6 border-t border-gray-200">
+      <h3 class="text-lg font-medium text-gray-900 mb-3">API Credentials</h3>
+      <div class="grid grid-cols-1 gap-4">
+        <div>
+          <label class="text-sm font-medium text-gray-500">Supabase URL</label>
+          <p class="text-sm text-gray-900 font-mono bg-gray-100 p-2 rounded">
+            {url}
+          </p>
+        </div>
+        <div>
+          <label class="text-sm font-medium text-gray-500">API Key</label>
+          <div class="flex items-center gap-2">
+            <p
+              class="text-sm text-gray-900 font-mono bg-gray-100 p-2 rounded flex-1"
+              id="api-key-display"
+            >
+              {key.substring(0, 20)}...
+            </p>
+            <button
+              class="px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded hover:bg-blue-200 transition-colors"
+              onclick="toggleApiKey()"
+            >
+              Show Full Key
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SchemaSection({
+  schema,
+  analysis,
+}: {
+  schema: string;
+  analysis: any;
+}) {
+  const exposedCount = Object.values(analysis.tableAccess).filter(
+    (a: any) => a.status === "readable",
+  ).length;
+  const deniedCount = Object.values(analysis.tableAccess).filter(
+    (a: any) => a.status === "denied",
+  ).length;
+  const emptyCount = Object.values(analysis.tableAccess).filter(
+    (a: any) => a.status === "empty",
+  ).length;
+
+  return (
+    <div class="mb-12">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-bold text-gray-900">Schema: {schema}</h2>
+        <div class="flex items-center gap-4 text-sm text-gray-600">
+          <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full">
+            {analysis.tables.length} Tables
+          </span>
+          <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
+            {analysis.rpcs.length} RPCs
+          </span>
+          <span class="bg-gray-100 text-gray-800 px-3 py-1 rounded-full">
+            {exposedCount} exposed • {emptyCount} empty • {deniedCount} denied
+          </span>
+        </div>
+      </div>
+
+      <div class="space-y-8">
+        {TablesSection({
+          tables: analysis.tables,
+          tableAccess: analysis.tableAccess,
+          schema,
+        })}
+        {RPCFunctionsSection({ rpcFunctions: analysis.rpcFunctions })}
+      </div>
+    </div>
+  );
+}
+
+function TablesSection({
+  tables,
+  tableAccess,
+  schema,
+}: {
+  tables: string[];
+  tableAccess: Record<string, any>;
+  schema: string;
+}) {
+  return (
+    <div>
+      <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+        <svg
+          class="w-5 h-5 mr-2 text-gray-500"
+          fill="currentColor"
+          viewBox="0 0 20 20"
+        >
+          <path
+            fillRule="evenodd"
+            d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 4a1 1 0 011-1h12a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1V8z"
+            clipRule="evenodd"
+          ></path>
+        </svg>
+        Tables ({tables.length})
+      </h3>
+      <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        {tables.length > 0 ? (
+          <div class="divide-y divide-gray-200">
+            {tables.map((table) =>
+              TableRow({
+                table,
+                access: tableAccess[table],
+                schema,
+              }),
+            )}
+          </div>
+        ) : (
+          <div class="p-8 text-center text-gray-500">No tables found</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function TableRow({
+  table,
+  access,
+  schema,
+}: {
+  table: string;
+  access: any;
+  schema: string;
+}) {
+  let statusClass = "";
+  let statusText = "";
+  let statusIcon = "";
+
+  switch (access?.status) {
+    case "readable":
+      statusClass = "bg-green-100 text-green-800 border-green-200";
+      statusText = "Data exposed";
+      statusIcon = "✓";
+      break;
+    case "empty":
+      statusClass = "bg-yellow-100 text-yellow-800 border-yellow-200";
+      statusText = "Empty or RLS protected";
+      statusIcon = "○";
+      break;
+    case "denied":
+      statusClass = "bg-red-100 text-red-800 border-red-200";
+      statusText = "Access denied";
+      statusIcon = "✗";
+      break;
+  }
+
+  return (
+    <>
+      <div class="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors">
+        <div class="flex items-center">
+          <span class="text-lg mr-3">{statusIcon}</span>
+          <span class="font-medium text-gray-900 font-mono">{table}</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span
+            class={`px-3 py-1 text-xs font-medium rounded-full border ${statusClass}`}
+          >
+            {statusText}
+          </span>
+          <button
+            class="px-3 py-1 text-xs bg-slate-600 text-white rounded hover:bg-slate-700 transition-colors font-mono"
+            onclick={`toggleQueryInterface('${schema}', '${table}')`}
+          >
+            Query
+          </button>
+        </div>
+      </div>
+      <div
+        id={`query-interface-${schema}-${table}`}
+        class="hidden border-t border-gray-200 bg-slate-50"
+      >
+        <InlineQueryInterface schema={schema} table={table} />
+      </div>
+    </>
+  );
+}
+
+function RPCFunctionsSection({ rpcFunctions }: { rpcFunctions: any[] }) {
+  return (
+    <div>
+      <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+        <svg
+          class="w-5 h-5 mr-2 text-gray-500"
+          fill="currentColor"
+          viewBox="0 0 20 20"
+        >
+          <path
+            fillRule="evenodd"
+            d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"
+            clipRule="evenodd"
+          ></path>
+        </svg>
+        RPC Functions ({rpcFunctions.length})
+      </h3>
+      <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        {rpcFunctions.length > 0 ? (
+          <div class="divide-y divide-gray-200">
+            {rpcFunctions.map((rpc) => RPCFunctionCard({ rpc }))}
+          </div>
+        ) : (
+          <div class="p-8 text-center text-gray-500">
+            No RPC functions found
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function RPCFunctionCard({ rpc }: { rpc: any }) {
+  return (
+    <div class="p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h4 class="font-medium text-gray-900">{rpc.name}</h4>
+      </div>
+      {rpc.parameters.length > 0 ? (
+        <div>
+          <div class="text-sm font-medium text-gray-700 mb-2">Parameters:</div>
+          <div class="space-y-2">
+            {rpc.parameters.map((param: any) => (
+              <div
+                key={param.name}
+                class="flex items-center justify-between text-sm"
+              >
+                <div class="flex items-center">
+                  <span class="font-medium text-gray-900">{param.name}</span>
+                  <span class="text-gray-500 ml-2">{param.type}</span>
+                  {param.format && (
+                    <span class="text-gray-400 ml-1">({param.format})</span>
+                  )}
+                </div>
+                <span
+                  class={`px-2 py-1 text-xs rounded-full ${
+                    param.required
+                      ? "bg-red-100 text-red-800"
+                      : "bg-gray-100 text-gray-600"
+                  }`}
+                >
+                  {param.required ? "required" : "optional"}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div class="text-sm text-gray-500">No parameters</div>
+      )}
+    </div>
+  );
+}
+
+function InlineQueryInterface({
+  schema,
+  table,
+}: {
+  schema: string;
+  table: string;
+}) {
+  return (
+    <div class="p-6">
+      <div class="mb-4">
+        <h4 class="text-sm font-semibold text-gray-800 font-mono mb-2">
+          Query Interface: {schema}.{table}
+        </h4>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div>
+            <ModernQueryBuilder />
+          </div>
+          <div>
+            <SmartResultsDisplay />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ModernQueryBuilder() {
+  return (
+    <div class="space-y-4">
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-2 font-mono">
+          Operation
+        </label>
+        <select
+          id="query-operation"
+          class="w-full p-2 border border-gray-300 rounded text-sm font-mono bg-white focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
+        >
+          <option value="select">SELECT</option>
+          <option value="insert">INSERT</option>
+          <option value="update">UPDATE</option>
+          <option value="delete">DELETE</option>
+        </select>
+      </div>
+
+      <div id="select-query" class="query-type">
+        <div class="mb-3">
+          <label class="block text-xs font-medium text-gray-600 mb-2 font-mono">
+            Columns
+          </label>
+          <input
+            type="text"
+            id="select-columns"
+            placeholder="* or column1, column2, ..."
+            class="w-full p-2 border border-gray-300 rounded text-sm font-mono bg-white focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
+          />
+        </div>
+        <div class="mb-3">
+          <label class="block text-xs font-medium text-gray-600 mb-2 font-mono">
+            Limit
+          </label>
+          <input
+            type="number"
+            id="select-limit"
+            placeholder="10"
+            class="w-full p-2 border border-gray-300 rounded text-sm font-mono bg-white focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
+          />
+        </div>
+        <div class="mb-3">
+          <label class="block text-xs font-medium text-gray-600 mb-2 font-mono">
+            Order By
+          </label>
+          <input
+            type="text"
+            id="select-order"
+            placeholder="column_name asc/desc"
+            class="w-full p-2 border border-gray-300 rounded text-sm font-mono bg-white focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
+          />
+        </div>
+      </div>
+
+      <div id="insert-query" class="query-type hidden">
+        <div class="mb-3">
+          <label class="block text-xs font-medium text-gray-600 mb-2 font-mono">
+            Data (JSON)
+          </label>
+          <textarea
+            id="insert-data"
+            rows="4"
+            placeholder='{"column1": "value1", "column2": "value2"}'
+            class="w-full p-2 border border-gray-300 rounded text-sm font-mono bg-white focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
+          ></textarea>
+        </div>
+      </div>
+
+      <div id="update-query" class="query-type hidden">
+        <div class="mb-3">
+          <label class="block text-xs font-medium text-gray-600 mb-2 font-mono">
+            Data (JSON)
+          </label>
+          <textarea
+            id="update-data"
+            rows="4"
+            placeholder='{"column1": "new_value"}'
+            class="w-full p-2 border border-gray-300 rounded text-sm font-mono bg-white focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
+          ></textarea>
+        </div>
+        <div class="mb-3">
+          <label class="block text-xs font-medium text-gray-600 mb-2 font-mono">
+            Filter
+          </label>
+          <input
+            type="text"
+            id="update-filter"
+            placeholder="column = 'value'"
+            class="w-full p-2 border border-gray-300 rounded text-sm font-mono bg-white focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
+          />
+        </div>
+      </div>
+
+      <div id="delete-query" class="query-type hidden">
+        <div class="mb-3">
+          <label class="block text-xs font-medium text-gray-600 mb-2 font-mono">
+            Filter
+          </label>
+          <input
+            type="text"
+            id="delete-filter"
+            placeholder="column = 'value'"
+            class="w-full p-2 border border-gray-300 rounded text-sm font-mono bg-white focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
+          />
+        </div>
+      </div>
+
+      <button
+        class="w-full bg-slate-700 text-white py-2 px-4 rounded text-sm font-mono hover:bg-slate-800 transition-colors"
+        onclick="executeQuery()"
+      >
+        Execute Query
+      </button>
+    </div>
+  );
+}
+
+function SmartResultsDisplay() {
+  return (
+    <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+      <div class="px-4 py-3 border-b border-gray-200 bg-gray-50">
+        <h5 class="text-xs font-semibold text-gray-700 font-mono">Results</h5>
+      </div>
+      <div class="relative">
+        <div
+          id="query-results"
+          class="min-h-[300px] max-h-[500px] overflow-auto"
+        >
+          <div class="p-8 text-center text-gray-400 text-sm font-mono">
+            Results will appear here...
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export abstract class HtmlRendererService {
+  public static generateHtmlReport(
+    result: AnalysisResult,
+    url: string,
+    key: string,
+  ) {
+    return (
+      <html lang="en">
+        <head>
+          <meta charset="UTF-8" />
+          <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0"
+          />
+          <title>Supabase Database Analysis Report</title>
+          <script src="https://cdn.tailwindcss.com"></script>
+          <script type="module">
+            {`
+            import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+            
+            const SUPABASE_URL = '${url}';
+            const SUPABASE_KEY = '${key}';
+            const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+            
+            window.supabase = supabase;
+            window.currentSchema = '';
+            window.currentTable = '';
+            
+            function toggleApiKey() {
+                const display = document.getElementById('api-key-display');
+                const button = event.target;
+                if (display.textContent.includes('...')) {
+                    display.textContent = '${key}';
+                    button.textContent = 'Hide Key';
+                } else {
+                    display.textContent = '${key.substring(0, 20)}...';
+                    button.textContent = 'Show Full Key';
+                }
+            }
+            
+            function toggleQueryInterface(schema, table) {
+                window.currentSchema = schema;
+                window.currentTable = table;
+                const interfaceId = \`query-interface-\${schema}-\${table}\`;
+                const interfaceEl = document.getElementById(interfaceId);
+                if (interfaceEl) {
+                    interfaceEl.classList.toggle('hidden');
+                }
+            }
+            
+            async function saveReport() {
+                try {
+                    // Generate filename with timestamp and domain
+                    const domain = '${result.summary.domain}';
+                    const timestamp = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+                    const filename = \`supabase-analysis-\${domain}-\${timestamp}.html\`;
+                    
+                    // Get the current HTML content
+                    const htmlContent = document.documentElement.outerHTML;
+                    
+                    // Check if File System Access API is supported
+                    if ('showSaveFilePicker' in window) {
+                        const fileHandle = await window.showSaveFilePicker({
+                            suggestedName: filename,
+                            types: [{
+                                description: 'HTML files',
+                                accept: {
+                                    'text/html': ['.html']
+                                }
+                            }]
+                        });
+                        
+                        const writable = await fileHandle.createWritable();
+                        await writable.write(htmlContent);
+                        await writable.close();
+                        
+                        // Show success message
+                        showNotification('Report saved successfully!', 'success');
+                    } else {
+                        // Fallback for browsers that don't support File System Access API
+                        const blob = new Blob([htmlContent], { type: 'text/html' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = filename;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        
+                        showNotification('Report downloaded successfully!', 'success');
+                    }
+                } catch (error) {
+                    if (error.name === 'AbortError') {
+                        // User cancelled the save dialog
+                        return;
+                    }
+                    console.error('Error saving report:', error);
+                    showNotification('Failed to save report: ' + error.message, 'error');
+                }
+            }
+            
+            function showNotification(message, type = 'info') {
+                // Create notification element
+                const notification = document.createElement('div');
+                notification.className = \`fixed top-4 right-4 px-4 py-3 rounded-lg shadow-lg z-50 font-mono text-sm transition-all duration-300 transform translate-x-full\`;
+                
+                if (type === 'success') {
+                    notification.className += ' bg-emerald-100 text-emerald-800 border border-emerald-200';
+                } else if (type === 'error') {
+                    notification.className += ' bg-red-100 text-red-800 border border-red-200';
+                } else {
+                    notification.className += ' bg-blue-100 text-blue-800 border border-blue-200';
+                }
+                
+                notification.textContent = message;
+                document.body.appendChild(notification);
+                
+                // Animate in
+                setTimeout(() => {
+                    notification.classList.remove('translate-x-full');
+                }, 100);
+                
+                // Remove after 3 seconds
+                setTimeout(() => {
+                    notification.classList.add('translate-x-full');
+                    setTimeout(() => {
+                        document.body.removeChild(notification);
+                    }, 300);
+                }, 3000);
+            }
+            
+            function renderSmartTable(data) {
+                if (!data || data.length === 0) return '<div class="p-8 text-center text-gray-400 text-sm font-mono">No data</div>';
+                
+                const columns = Object.keys(data[0]);
+                const maxRows = Math.min(data.length, 100); // Limit to 100 rows for performance
+                
+                let html = \`
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs font-mono">
+                            <thead class="bg-gray-50 border-b border-gray-200">
+                                <tr>
+                                    \${columns.map(col => \`<th class="px-3 py-2 text-left font-semibold text-gray-700 border-r border-gray-200">\${col}</th>\`).join('')}
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                \`;
+                
+                for (let i = 0; i < maxRows; i++) {
+                    const row = data[i];
+                    html += \`
+                        <tr class="hover:bg-gray-50">
+                            \${columns.map(col => {
+                                const value = row[col];
+                                const displayValue = value === null ? '<span class="text-gray-400 italic">null</span>' : 
+                                                  value === undefined ? '<span class="text-gray-400 italic">undefined</span>' :
+                                                  typeof value === 'object' ? \`<span class="text-blue-600">\${JSON.stringify(value)}</span>\` :
+                                                  String(value);
+                                return \`<td class="px-3 py-2 border-r border-gray-200 max-w-xs truncate" title="\${String(value)}">\${displayValue}</td>\`;
+                            }).join('')}
+                        </tr>
+                    \`;
+                }
+                
+                html += \`
+                            </tbody>
+                        </table>
+                    </div>
+                \`;
+                
+                if (data.length > maxRows) {
+                    html += \`<div class="px-3 py-2 text-xs text-gray-500 bg-gray-50 border-t border-gray-200">Showing \${maxRows} of \${data.length} rows</div>\`;
+                }
+                
+                return html;
+            }
+            
+            function executeQuery() {
+                const operation = document.getElementById('query-operation').value;
+                const resultsDiv = document.getElementById('query-results');
+                resultsDiv.innerHTML = '<div class="text-blue-600">Executing query...</div>';
+                
+                let query;
+                const table = supabase.schema(window.currentSchema).from(window.currentTable);
+                
+                try {
+                    switch(operation) {
+                        case 'select':
+                            const columns = document.getElementById('select-columns').value || '*';
+                            const limit = document.getElementById('select-limit').value;
+                            const order = document.getElementById('select-order').value;
+                            
+                            query = table.select(columns);
+                            if (limit) query = query.limit(parseInt(limit));
+                            if (order) {
+                                const [col, dir] = order.split(' ');
+                                query = query.order(col, { ascending: dir !== 'desc' });
+                            }
+                            break;
+                            
+                        case 'insert':
+                            const insertData = JSON.parse(document.getElementById('insert-data').value);
+                            query = table.insert(insertData);
+                            break;
+                            
+                        case 'update':
+                            const updateData = JSON.parse(document.getElementById('update-data').value);
+                            const updateFilter = document.getElementById('update-filter').value;
+                            query = table.update(updateData);
+                            if (updateFilter) {
+                                const parts = updateFilter.split(' ');
+                                if (parts.length >= 3) {
+                                    const [col, op, val] = parts;
+                                    if (op === '=' && val) query = query.eq(col, val.replace(/['"]/g, ''));
+                                }
+                            }
+                            break;
+                            
+                        case 'delete':
+                            const deleteFilter = document.getElementById('delete-filter').value;
+                            query = table.delete();
+                            if (deleteFilter) {
+                                const parts = deleteFilter.split(' ');
+                                if (parts.length >= 3) {
+                                    const [col, op, val] = parts;
+                                    if (op === '=' && val) query = query.eq(col, val.replace(/['"]/g, ''));
+                                }
+                            }
+                            break;
+                    }
+                    
+                    query.then(({ data, error }) => {
+                        if (error) {
+                            resultsDiv.innerHTML = \`<div class="p-4 text-red-600 text-sm font-mono bg-red-50 border border-red-200 rounded">Error: \${error.message}</div>\`;
+                        } else {
+                            if (data && data.length > 0) {
+                                resultsDiv.innerHTML = renderSmartTable(data);
+                            } else {
+                                resultsDiv.innerHTML = '<div class="p-8 text-center text-gray-400 text-sm font-mono">No data returned</div>';
+                            }
+                        }
+                    });
+                    
+                } catch (err) {
+                    resultsDiv.innerHTML = \`<div class="text-red-600">Error: \${err.message}</div>\`;
+                }
+            }
+            
+            // Show/hide query type sections
+            document.addEventListener('DOMContentLoaded', function() {
+                const operationSelect = document.getElementById('query-operation');
+                if (operationSelect) {
+                    operationSelect.addEventListener('change', function() {
+                        document.querySelectorAll('.query-type').forEach(el => el.classList.add('hidden'));
+                        const targetId = this.value + '-query';
+                        const target = document.getElementById(targetId);
+                        if (target) target.classList.remove('hidden');
+                    });
+                }
+            });
+            
+            window.toggleApiKey = toggleApiKey;
+            window.toggleQueryInterface = toggleQueryInterface;
+            window.executeQuery = executeQuery;
+            window.saveReport = saveReport;
+            `}
+          </script>
+          <script>
+            {`
+            tailwind.config = {
+                theme: {
+                    extend: {
+                        colors: {
+                            'supabase-green': '#3ECF8E',
+                            'supabase-dark': '#1F2937'
+                        }
+                    }
+                }
+            }
+            `}
+          </script>
+          <style>
+            {`
+            @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap');
+            
+            body {
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+            }
+            
+            .font-mono {
+                font-family: 'JetBrains Mono', 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+            }
+            
+            .fade-in { 
+                animation: fadeIn 0.6s ease-out; 
+            }
+            
+            @keyframes fadeIn { 
+                from { 
+                    opacity: 0; 
+                    transform: translateY(20px); 
+                } 
+                to { 
+                    opacity: 1; 
+                    transform: translateY(0); 
+                } 
+            }
+            
+            .scrollbar-thin {
+                scrollbar-width: thin;
+                scrollbar-color: #cbd5e1 #f1f5f9;
+            }
+            
+            .scrollbar-thin::-webkit-scrollbar {
+                width: 6px;
+                height: 6px;
+            }
+            
+            .scrollbar-thin::-webkit-scrollbar-track {
+                background: #f1f5f9;
+            }
+            
+            .scrollbar-thin::-webkit-scrollbar-thumb {
+                background: #cbd5e1;
+                border-radius: 3px;
+            }
+            
+            .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+                background: #94a3b8;
+            }
+            `}
+          </style>
+        </head>
+        <body class="bg-slate-50 min-h-screen scrollbar-thin">
+          <div class="container mx-auto px-6 py-8 max-w-7xl">
+            {/* Header */}
+            <header class="bg-white rounded-xl shadow-sm border border-slate-200 p-8 mb-8 fade-in">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h1 class="text-3xl font-bold text-slate-900 mb-2 font-mono">
+                    Supabase Database Analysis
+                  </h1>
+                  <p class="text-slate-600 font-mono text-sm">
+                    Generated on {new Date().toLocaleString()}
+                  </p>
+                </div>
+                <div class="flex items-center gap-6">
+                  <div class="text-right">
+                    <div class="text-sm text-slate-500 font-mono">
+                      Schemas Analyzed
+                    </div>
+                    <div class="text-2xl font-bold text-emerald-600 font-mono">
+                      {result.schemas.length}
+                    </div>
+                  </div>
+                  <button
+                    onclick="saveReport()"
+                    class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-mono text-sm flex items-center gap-2"
+                  >
+                    <svg
+                      class="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12"
+                      ></path>
+                    </svg>
+                    Save Report
+                  </button>
+                </div>
+              </div>
+            </header>
+
+            {/* Target Summary */}
+            {TargetSummary({
+              domain: result.summary.domain,
+              url,
+              key,
+              metadata: result.summary.metadata,
+              jwtInfo: result.summary.jwtInfo,
+            })}
+
+            {/* Database Analysis */}
+            <section class="space-y-8">
+              <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+                <svg
+                  class="w-6 h-6 mr-3 text-supabase-green"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                    clipRule="evenodd"
+                  ></path>
+                </svg>
+                Database Analysis
+              </h2>
+              {Object.entries(result.schemaDetails).map(([schema, analysis]) =>
+                SchemaSection({ schema, analysis }),
+              )}
+            </section>
+
+            {/* Footer */}
+            <footer class="mt-12 text-center text-slate-500 text-sm font-mono">
+              <p>Generated by SupaDump - Security analysis tool for Supabase</p>
+            </footer>
+          </div>
+        </body>
+      </html>
+    ) as string;
+  }
+}
