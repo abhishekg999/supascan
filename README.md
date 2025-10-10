@@ -5,7 +5,7 @@ A security analysis CLI tool for Supabase databases that helps identify exposed 
 ## Installation
 
 ```bash
-npm install -g supascan
+bun install -g supascan
 ```
 
 ## Usage
