@@ -1,6 +1,6 @@
 {
   "name": "supascan",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Security analysis tool for Supabase databases",
   "main": "index.ts",
   "module": "index.ts",
