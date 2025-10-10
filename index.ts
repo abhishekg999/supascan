@@ -1,3 +1,4 @@
+#!/usr/bin/env bun
 import { Command } from "@commander-js/extra-typings";
 import { executeAnalyzeCommand } from "./commands/analyze.command";
 import { executeDumpCommand } from "./commands/dump.command";
