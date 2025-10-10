@@ -1,6 +1,6 @@
 {
   "name": "supascan",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Security analysis tool for Supabase databases",
   "main": "dist/supascan.js",
   "type": "module",

@@ -42,13 +42,13 @@ export async function executeAnalyzeCommand(
 
 function displayAnalysisResult(result: AnalysisResult): void {
   console.log();
-  console.log(pc.bold(pc.cyan("━".repeat(60))));
+  console.log(pc.bold(pc.cyan("\u2501".repeat(60))));
   console.log(pc.bold(pc.cyan("  SUPABASE DATABASE ANALYSIS")));
-  console.log(pc.bold(pc.cyan("━".repeat(60))));
+  console.log(pc.bold(pc.cyan("\u2501".repeat(60))));
   console.log();
 
   console.log(pc.bold(pc.yellow("TARGET SUMMARY")));
-  console.log(pc.dim("─".repeat(20)));
+  console.log(pc.dim("\u2500".repeat(20)));
   console.log(pc.bold("Domain:"), pc.white(result.summary.domain));
 
   if (result.summary.metadata?.service) {
@@ -73,7 +73,7 @@ function displayAnalysisResult(result: AnalysisResult): void {
   if (result.summary.jwtInfo) {
     console.log();
     console.log(pc.bold(pc.yellow("JWT TOKEN INFO")));
-    console.log(pc.dim("─".repeat(20)));
+    console.log(pc.dim("\u2500".repeat(20)));
 
     if (result.summary.jwtInfo.iss) {
       console.log(pc.bold("Issuer:"), pc.white(result.summary.jwtInfo.iss));
@@ -96,7 +96,7 @@ function displayAnalysisResult(result: AnalysisResult): void {
 
   console.log();
   console.log(pc.bold(pc.cyan("DATABASE ANALYSIS")));
-  console.log(pc.dim("─".repeat(20)));
+  console.log(pc.dim("\u2500".repeat(20)));
   console.log(
     pc.bold("Schemas discovered:"),
     pc.green(result.schemas.length.toString()),
@@ -123,7 +123,7 @@ function displayAnalysisResult(result: AnalysisResult): void {
     );
     console.log(
       pc.dim(
-        `  ${exposedCount} exposed • ${emptyCount} empty/protected • ${deniedCount} denied`,
+        `  ${exposedCount} exposed \u2022 ${emptyCount} empty/protected \u2022 ${deniedCount} denied`,
       ),
     );
     console.log();
@@ -136,15 +136,15 @@ function displayAnalysisResult(result: AnalysisResult): void {
 
         switch (access?.status) {
           case "readable":
-            indicator = pc.green("✓");
+            indicator = pc.green("\u2713");
             description = pc.dim("(data exposed)");
             break;
           case "empty":
-            indicator = pc.yellow("○");
+            indicator = pc.yellow("\u25CB");
             description = pc.dim("(0 rows - empty or RLS)");
             break;
           case "denied":
-            indicator = pc.red("✗");
+            indicator = pc.red("\u2717");
             description = pc.dim("(access denied)");
             break;
         }
@@ -159,7 +159,7 @@ function displayAnalysisResult(result: AnalysisResult): void {
     console.log(pc.bold("RPCs:"), pc.green(analysis.rpcs.length.toString()));
     if (analysis.rpcFunctions.length > 0) {
       analysis.rpcFunctions.forEach((rpc) => {
-        console.log(`  • ${pc.white(rpc.name)}`);
+        console.log(`  \u2022 ${pc.white(rpc.name)}`);
         if (rpc.parameters.length > 0) {
           rpc.parameters.forEach((param) => {
             const required = param.required
@@ -182,6 +182,6 @@ function displayAnalysisResult(result: AnalysisResult): void {
     console.log();
   });
 
-  console.log(pc.bold(pc.cyan("━".repeat(60))));
+  console.log(pc.bold(pc.cyan("\u2501".repeat(60))));
   console.log();
 }
