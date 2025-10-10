@@ -159,7 +159,3 @@ bun test
 # Lint
 bun run lint
 ```
-
-## License
-
-Private - All rights reserved.

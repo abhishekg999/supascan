@@ -1,7 +1,8 @@
 {
   "name": "supascan",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "Security analysis tool for Supabase databases",
+  "license": "MIT",
   "main": "dist/supascan.js",
   "type": "module",
   "bin": {
@@ -14,9 +15,9 @@
     "lint": "tsc --noEmit",
     "start": "bun run index.ts",
     "format": "prettier --write .",
-    "build": "bun run build:bundle",
+    "build": "bun run build:binary && bun run build:bundle",
     "build:binary": "bun run lint && bun build --compile --minify --outfile dist/supascan ./index.ts",
-    "build:bundle": "bun run lint && bun build --target node --minify --outfile dist/supascan.js ./index.ts",
+    "build:bundle": "bun run lint && bun build --target node --outfile dist/supascan.js ./index.ts",
     "test": "bun test",
     "prepublishOnly": "bun run build:bundle"
   },

@@ -55,13 +55,13 @@ export async function executeDumpCommand(
 
 function displaySwaggerResult(schema: string, swagger: any): void {
   console.log();
-  console.log(pc.bold(pc.cyan("\u2501".repeat(60))));
+  console.log(pc.bold(pc.cyan("━".repeat(60))));
   console.log(pc.bold(pc.cyan(`  SWAGGER DUMP: ${schema}`)));
-  console.log(pc.bold(pc.cyan("\u2501".repeat(60))));
+  console.log(pc.bold(pc.cyan("━".repeat(60))));
   console.log();
   console.log(JSON.stringify(swagger, null, 2));
   console.log();
-  console.log(pc.bold(pc.cyan("\u2501".repeat(60))));
+  console.log(pc.bold(pc.cyan("━".repeat(60))));
   console.log();
 }
 
@@ -75,9 +75,9 @@ function displayTableDumpResult(
   },
 ): void {
   console.log();
-  console.log(pc.bold(pc.cyan("\u2501".repeat(60))));
+  console.log(pc.bold(pc.cyan("━".repeat(60))));
   console.log(pc.bold(pc.cyan(`  TABLE DUMP: ${schema}.${table}`)));
-  console.log(pc.bold(pc.cyan("\u2501".repeat(60))));
+  console.log(pc.bold(pc.cyan("━".repeat(60))));
   console.log();
   console.log(pc.bold("Total rows:"), pc.green(result.count.toString()));
   console.log(pc.bold("Showing:"), pc.green(result.rows.length.toString()));
@@ -93,6 +93,6 @@ function displayTableDumpResult(
   }
 
   console.log();
-  console.log(pc.bold(pc.cyan("\u2501".repeat(60))));
+  console.log(pc.bold(pc.cyan("━".repeat(60))));
   console.log();
 }

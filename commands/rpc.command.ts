@@ -104,9 +104,9 @@ function displayRPCHelp(
   rpcFunction: RPCFunction | null,
 ): void {
   console.log();
-  console.log(pc.bold(pc.cyan("\u2501".repeat(60))));
+  console.log(pc.bold(pc.cyan("━".repeat(60))));
   console.log(pc.bold(pc.cyan(`  RPC HELP: ${schema}.${rpcName}`)));
-  console.log(pc.bold(pc.cyan("\u2501".repeat(60))));
+  console.log(pc.bold(pc.cyan("━".repeat(60))));
   console.log();
 
   if (rpcFunction && rpcFunction.parameters.length > 0) {
@@ -118,9 +118,7 @@ function displayRPCHelp(
       const type = param.format
         ? `${param.type} (${param.format})`
         : param.type;
-      console.log(
-        `  \u2022 ${pc.cyan(param.name)}: ${pc.yellow(type)} ${required}`,
-      );
+      console.log(`  • ${pc.cyan(param.name)}: ${pc.yellow(type)} ${required}`);
       if (param.description) {
         console.log(pc.dim(`    ${param.description}`));
       }
@@ -140,7 +138,7 @@ function displayRPCHelp(
   } else {
     console.log(
       pc.yellow(
-        "\u26A0\uFE0F  Schema introspection failed - parameter information unavailable",
+        "⚠️  Schema introspection failed - parameter information unavailable",
       ),
     );
     console.log();
@@ -158,7 +156,7 @@ function displayRPCHelp(
     );
   }
   console.log();
-  console.log(pc.bold(pc.cyan("\u2501".repeat(60))));
+  console.log(pc.bold(pc.cyan("━".repeat(60))));
   console.log();
 }
 
@@ -169,13 +167,13 @@ function displayRPCResult(
   explain?: boolean,
 ): void {
   console.log();
-  console.log(pc.bold(pc.cyan("\u2501".repeat(60))));
+  console.log(pc.bold(pc.cyan("━".repeat(60))));
   if (explain) {
     console.log(pc.bold(pc.cyan(`  QUERY PLAN: ${schema}.${rpcName}`)));
   } else {
     console.log(pc.bold(pc.cyan(`  RPC RESULT: ${schema}.${rpcName}`)));
   }
-  console.log(pc.bold(pc.cyan("\u2501".repeat(60))));
+  console.log(pc.bold(pc.cyan("━".repeat(60))));
   console.log();
 
   if (explain) {
@@ -202,6 +200,6 @@ function displayRPCResult(
   }
 
   console.log();
-  console.log(pc.bold(pc.cyan("\u2501".repeat(60))));
+  console.log(pc.bold(pc.cyan("━".repeat(60))));
   console.log();
 }
