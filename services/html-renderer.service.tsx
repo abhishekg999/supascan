@@ -23,13 +23,15 @@ window.currentTable = '';
 
 function toggleApiKey() {
     const display = document.getElementById('api-key-display');
-    const button = event.target;
-    if (display.textContent.includes('...')) {
-        display.textContent = '${key}';
-        button.textContent = 'Hide Key';
-    } else {
-        display.textContent = '${key.substring(0, 20)}...';
-        button.textContent = 'Show Full Key';
+    const button = document.getElementById('api-key-toggle');
+    if (display && button) {
+        if (display.textContent.includes('...')) {
+            display.textContent = '${key}';
+            button.textContent = 'Hide Key';
+        } else {
+            display.textContent = '${key.substring(0, 20)}...';
+            button.textContent = 'Show Full Key';
+        }
     }
 }
 
@@ -507,12 +509,15 @@ function APICredentialsDisplay({ url, key }: { url: string; key: string }) {
           URL: {url}
         </div>
         <div class="flex items-center gap-1">
-          <span>Key: {key.substring(0, 20)}...</span>
+          <span>
+            Key: <span id="api-key-display">{key.substring(0, 20)}...</span>
+          </span>
           <button
+            id="api-key-toggle"
             class="px-1 py-0.5 text-xs bg-blue-100 text-blue-800 rounded hover:bg-blue-200 transition-colors"
             onclick="toggleApiKey()"
           >
-            Show
+            Show Full Key
           </button>
         </div>
       </div>
