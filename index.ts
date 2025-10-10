@@ -9,7 +9,7 @@ import { VERSION } from "./version";
 const program = new Command();
 
 program
-  .name("supadump")
+  .name("supascan")
   .description("Security analysis tool for Supabase")
   .version(VERSION)
   .option("-u, --url <url>", "Supabase URL")

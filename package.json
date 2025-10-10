@@ -1,12 +1,12 @@
 {
-  "name": "supadump",
+  "name": "supascan",
   "version": "0.0.1",
   "description": "Security analysis tool for Supabase databases",
   "main": "index.ts",
   "module": "index.ts",
   "type": "module",
   "bin": {
-    "supadump": "./index.ts"
+    "supascan": "./index.ts"
   },
   "files": [
     "index.ts",
@@ -14,14 +14,13 @@
     "services/",
     "context.ts",
     "utils.ts",
-    "version.ts",
-    "dist/"
+    "version.ts"
   ],
   "scripts": {
     "lint": "tsc --noEmit",
     "start": "bun run index.ts",
     "format": "prettier --write .",
-    "build": "bun run lint && bun build --compile --minify --outfile dist/supadump ./index.ts",
+    "build": "bun run lint && bun build --compile --minify --outfile dist/supascan ./index.ts",
     "test": "bun test",
     "prepublishOnly": "bun run build"
   },

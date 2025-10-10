@@ -127,14 +127,14 @@ function displayRPCHelp(
     console.log(pc.bold("Usage:"));
     console.log(
       pc.dim(
-        `supadump --rpc "${schema}.${rpcName}" --args '{"param1": "value1", "param2": "value2"}'`,
+        `supascan --rpc "${schema}.${rpcName}" --args '{"param1": "value1", "param2": "value2"}'`,
       ),
     );
   } else if (rpcFunction) {
     console.log(pc.dim("No parameters required"));
     console.log();
     console.log(pc.bold("Usage:"));
-    console.log(pc.dim(`supadump --rpc "${schema}.${rpcName}"`));
+    console.log(pc.dim(`supascan --rpc "${schema}.${rpcName}"`));
   } else {
     console.log(
       pc.yellow(
@@ -145,7 +145,7 @@ function displayRPCHelp(
     console.log(pc.bold("Usage:"));
     console.log(
       pc.dim(
-        `supadump --rpc "${schema}.${rpcName}" --args '{"param1": "value1"}'`,
+        `supascan --rpc "${schema}.${rpcName}" --args '{"param1": "value1"}'`,
       ),
     );
     console.log();

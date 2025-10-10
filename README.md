@@ -1,11 +1,11 @@
-# supadump
+# supascan
 
 A security analysis CLI tool for Supabase databases that helps identify exposed data, analyze schemas, and test RPC functions.
 
 ## Installation
 
 ```bash
-npm install -g supadump
+npm install -g supascan
 ```
 
 ## Usage
@@ -15,7 +15,7 @@ npm install -g supadump
 Analyze your Supabase database for security issues:
 
 ```bash
-supadump --url https://your-project.supabase.co --key your-anon-key
+supascan --url https://your-project.supabase.co --key your-anon-key
 ```
 
 ### Available Commands
@@ -24,46 +24,46 @@ supadump --url https://your-project.supabase.co --key your-anon-key
 
 ```bash
 # Analyze all schemas
-supadump --url <url> --key <key>
+supascan --url <url> --key <key>
 
 # Analyze specific schema
-supadump --url <url> --key <key> --schema public
+supascan --url <url> --key <key> --schema public
 
 # Generate HTML report
-supadump --url <url> --key <key> --html
+supascan --url <url> --key <key> --html
 
 # JSON output
-supadump --url <url> --key <key> --json
+supascan --url <url> --key <key> --json
 ```
 
 #### Data Dumping
 
 ```bash
 # Dump table data
-supadump --url <url> --key <key> --dump public.users --limit 100
+supascan --url <url> --key <key> --dump public.users --limit 100
 
 # Dump Swagger JSON for schema
-supadump --url <url> --key <key> --dump public
+supascan --url <url> --key <key> --dump public
 ```
 
 #### RPC Testing
 
 ```bash
 # Get RPC help
-supadump --url <url> --key <key> --rpc public.get_user_stats
+supascan --url <url> --key <key> --rpc public.get_user_stats
 
 # Call RPC with parameters
-supadump --url <url> --key <key> --rpc public.get_user_stats --args '{"user_id": "123"}'
+supascan --url <url> --key <key> --rpc public.get_user_stats --args '{"user_id": "123"}'
 
 # Show query execution plan
-supadump --url <url> --key <key> --rpc public.get_user_stats --args '{"user_id": "123"}' --explain
+supascan --url <url> --key <key> --rpc public.get_user_stats --args '{"user_id": "123"}' --explain
 ```
 
 #### Credential Extraction (Experimental)
 
 ```bash
 # Extract credentials from JS file
-supadump --extract https://example.com/app.js --url <url> --key <key>
+supascan --extract https://example.com/app.js --url <url> --key <key>
 ```
 
 ## Options
@@ -84,7 +84,7 @@ supadump --extract https://example.com/app.js --url <url> --key <key>
 | `--explain`                        | Show query execution plan                                        |
 | `--suppress-experimental-warnings` | Suppress experimental warnings                                   |
 
-## What supadump Analyzes
+## What supascan Analyzes
 
 ### Database Security Assessment
 
@@ -116,19 +116,19 @@ supadump --extract https://example.com/app.js --url <url> --key <key>
 ### Security Analysis Report
 
 ```bash
-supadump --url https://abc123.supabase.co --key eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9... --html
+supascan --url https://abc123.supabase.co --key eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9... --html
 ```
 
 ### Check Specific Table Access
 
 ```bash
-supadump --url https://abc123.supabase.co --key eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9... --dump public.users --limit 5
+supascan --url https://abc123.supabase.co --key eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9... --dump public.users --limit 5
 ```
 
 ### Test RPC Function
 
 ```bash
-supadump --url https://abc123.supabase.co --key eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9... --rpc public.get_user_count --args '{"active": true}'
+supascan --url https://abc123.supabase.co --key eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9... --rpc public.get_user_count --args '{"active": true}'
 ```
 
 ## Security Considerations

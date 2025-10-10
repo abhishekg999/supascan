@@ -96,7 +96,7 @@ export const experimentalWarning = onlyOnce(() => {
 
 export const generateTempFilePath = (): string => {
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-  return join(tmpdir(), `supadump-${timestamp}.html`);
+  return join(tmpdir(), `supascan-${timestamp}.html`);
 };
 
 export const writeHtmlFile = (filePath: string, content: string): void => {
