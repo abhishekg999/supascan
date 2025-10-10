@@ -1,5 +1,325 @@
 import type { AnalysisResult } from "./analyzer.service";
 
+function ClientScript({
+  url,
+  key,
+  domain,
+}: {
+  url: string;
+  key: string;
+  domain: string;
+}) {
+  return (
+    <>
+      {`import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+const SUPABASE_URL = '${url}';
+const SUPABASE_KEY = '${key}';
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+window.supabase = supabase;
+window.currentSchema = '';
+window.currentTable = '';
+
+function toggleApiKey() {
+    const display = document.getElementById('api-key-display');
+    const button = event.target;
+    if (display.textContent.includes('...')) {
+        display.textContent = '${key}';
+        button.textContent = 'Hide Key';
+    } else {
+        display.textContent = '${key.substring(0, 20)}...';
+        button.textContent = 'Show Full Key';
+    }
+}
+
+function toggleQueryInterface(schema, table) {
+    window.currentSchema = schema;
+    window.currentTable = table;
+    const interfaceId = \`query-interface-\${schema}-\${table}\`;
+    const interfaceEl = document.getElementById(interfaceId);
+    if (interfaceEl) {
+        interfaceEl.classList.toggle('hidden');
+    }
+}
+
+async function saveReport() {
+    try {
+        // Generate filename with timestamp and domain
+        const domain = '${domain}';
+        const timestamp = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        const filename = \`supabase-analysis-\${domain}-\${timestamp}.html\`;
+        
+        // Get the current HTML content
+        const htmlContent = document.documentElement.outerHTML;
+        
+        // Check if File System Access API is supported
+        if ('showSaveFilePicker' in window) {
+            const fileHandle = await window.showSaveFilePicker({
+                suggestedName: filename,
+                types: [{
+                    description: 'HTML files',
+                    accept: {
+                        'text/html': ['.html']
+                    }
+                }]
+            });
+            
+            const writable = await fileHandle.createWritable();
+            await writable.write(htmlContent);
+            await writable.close();
+            
+            // Show success message
+            showNotification('Report saved successfully!', 'success');
+        } else {
+            // Fallback for browsers that don't support File System Access API
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showNotification('Report downloaded successfully!', 'success');
+        }
+    } catch (error) {
+        if (error.name === 'AbortError') {
+            // User cancelled the save dialog
+            return;
+        }
+        console.error('Error saving report:', error);
+        showNotification('Failed to save report: ' + error.message, 'error');
+    }
+}
+
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = \`fixed top-4 right-4 px-4 py-3 rounded-lg shadow-lg z-50 font-mono text-sm transition-all duration-300 transform translate-x-full\`;
+    
+    if (type === 'success') {
+        notification.className += ' bg-emerald-100 text-emerald-800 border border-emerald-200';
+    } else if (type === 'error') {
+        notification.className += ' bg-red-100 text-red-800 border border-red-200';
+    } else {
+        notification.className += ' bg-blue-100 text-blue-800 border border-blue-200';
+    }
+    
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    // Animate in
+    setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+    }, 100);
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => {
+            document.body.removeChild(notification);
+        }, 300);
+    }, 3000);
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function renderSmartTable(data) {
+    console.log('renderSmartTable called with data:', data);
+    
+    if (!data || data.length === 0) {
+        console.log('No data to render');
+        return '<div class="p-8 text-center text-gray-400 text-sm font-mono">No data</div>';
+    }
+    
+    const columns = Object.keys(data[0]);
+    const maxRows = Math.min(data.length, 100);
+    
+    console.log(\`Rendering table with \${columns.length} columns and \${maxRows} rows\`);
+    
+    let html = \`
+        <div class="overflow-x-auto scrollbar-thin">
+            <table class="w-full text-xs font-mono">
+                <thead class="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                        \${columns.map(col => \`<th class="px-3 py-2 text-left font-semibold text-slate-700 border-r border-slate-200">\${escapeHtml(col)}</th>\`).join('')}
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200">
+    \`;
+    
+    for (let i = 0; i < maxRows; i++) {
+        const row = data[i];
+        html += \`
+            <tr class="hover:bg-slate-50">
+                \${columns.map(col => {
+                    const value = row[col];
+                    let displayValue;
+                    let titleValue;
+                    
+                    if (value === null) {
+                        displayValue = '<span class="text-gray-400 italic">null</span>';
+                        titleValue = 'null';
+                    } else if (value === undefined) {
+                        displayValue = '<span class="text-gray-400 italic">undefined</span>';
+                        titleValue = 'undefined';
+                    } else if (typeof value === 'object') {
+                        const jsonStr = JSON.stringify(value);
+                        displayValue = \`<span class="text-blue-600">\${escapeHtml(jsonStr)}</span>\`;
+                        titleValue = jsonStr;
+                    } else {
+                        const escapedValue = escapeHtml(String(value));
+                        displayValue = escapedValue;
+                        titleValue = String(value);
+                    }
+                    
+                    return \`<td class="px-3 py-2 border-r border-slate-200 max-w-xs truncate" title="\${escapeHtml(titleValue)}">\${displayValue}</td>\`;
+                }).join('')}
+            </tr>
+        \`;
+    }
+    
+    html += \`
+                </tbody>
+            </table>
+        </div>
+    \`;
+    
+    if (data.length > maxRows) {
+        html += \`<div class="px-3 py-2 text-xs text-slate-500 bg-slate-50 border-t border-slate-200 font-mono">Showing \${maxRows} of \${data.length} rows</div>\`;
+    }
+    
+    console.log('Table HTML generated successfully');
+    return html;
+}
+
+function executeQuery(uniqueId) {
+    const operation = document.getElementById(\`query-operation-\${uniqueId}\`).value;
+    const resultsDiv = document.getElementById(\`query-results-\${uniqueId}\`);
+    
+    // Better loading feedback
+    resultsDiv.innerHTML = \`
+        <div class="p-8 text-center">
+            <div class="inline-flex items-center gap-3 text-slate-600 font-mono text-sm">
+                <div class="animate-spin rounded-full h-4 w-4 border-2 border-slate-300 border-t-slate-600"></div>
+                Executing query...
+            </div>
+        </div>
+    \`;
+    
+    let query;
+    const table = supabase.schema(window.currentSchema).from(window.currentTable);
+    
+    try {
+        switch(operation) {
+            case 'select':
+                const columns = document.getElementById(\`select-columns-\${uniqueId}\`).value || '*';
+                const limitValue = document.getElementById(\`select-limit-\${uniqueId}\`).value;
+                const order = document.getElementById(\`select-order-\${uniqueId}\`).value;
+                
+                query = table.select(columns);
+                if (limitValue && limitValue.trim() !== '') {
+                    const limitNum = parseInt(limitValue);
+                    if (!isNaN(limitNum) && limitNum > 0) {
+                        query = query.limit(limitNum);
+                    }
+                }
+                if (order && order.trim() !== '') {
+                    const [col, dir] = order.trim().split(' ');
+                    if (col) {
+                        query = query.order(col, { ascending: dir !== 'desc' });
+                    }
+                }
+                break;
+                
+            case 'insert':
+                const insertData = JSON.parse(document.getElementById(\`insert-data-\${uniqueId}\`).value);
+                query = table.insert(insertData);
+                break;
+                
+            case 'update':
+                const updateData = JSON.parse(document.getElementById(\`update-data-\${uniqueId}\`).value);
+                const updateFilter = document.getElementById(\`update-filter-\${uniqueId}\`).value;
+                query = table.update(updateData);
+                if (updateFilter) {
+                    const parts = updateFilter.split(' ');
+                    if (parts.length >= 3) {
+                        const [col, op, val] = parts;
+                        if (op === '=' && val) query = query.eq(col, val.replace(/['"]/g, ''));
+                    }
+                }
+                break;
+                
+            case 'delete':
+                const deleteFilter = document.getElementById(\`delete-filter-\${uniqueId}\`).value;
+                query = table.delete();
+                if (deleteFilter) {
+                    const parts = deleteFilter.split(' ');
+                    if (parts.length >= 3) {
+                        const [col, op, val] = parts;
+                        if (op === '=' && val) query = query.eq(col, val.replace(/['"]/g, ''));
+                    }
+                }
+                break;
+        }
+        
+        query.then(({ data, error }) => {
+            console.log('Query result:', { data, error });
+            
+            if (error) {
+                console.error('Query error:', error);
+                resultsDiv.innerHTML = \`<div class="p-4 text-red-600 text-sm font-mono bg-red-50 border border-red-200 rounded">Error: \${error.message}</div>\`;
+            } else {
+                console.log('Query successful, data length:', data ? data.length : 0);
+                if (data && data.length > 0) {
+                    console.log('Calling renderSmartTable with data:', data);
+                    resultsDiv.innerHTML = renderSmartTable(data);
+                } else {
+                    console.log('No data returned');
+                    resultsDiv.innerHTML = '<div class="p-8 text-center text-gray-400 text-sm font-mono">No data returned</div>';
+                }
+            }
+        }).catch((err) => {
+            console.error('Query execution error:', err);
+            resultsDiv.innerHTML = \`<div class="p-4 text-red-600 text-sm font-mono bg-red-50 border border-red-200 rounded">Execution error: \${err.message}</div>\`;
+        });
+        
+    } catch (err) {
+        resultsDiv.innerHTML = \`<div class="text-red-600">Error: \${err.message}</div>\`;
+    }
+}
+
+// Show/hide query type sections
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listeners to all operation selects
+    document.querySelectorAll('[id^="query-operation-"]').forEach(select => {
+        select.addEventListener('change', function() {
+            const uniqueId = this.id.replace('query-operation-', '');
+            // Hide all query types for this specific interface
+            document.querySelectorAll(\`[id$="-\${uniqueId}"].query-type\`).forEach(el => el.classList.add('hidden'));
+            // Show the selected query type
+            const targetId = this.value + '-query-' + uniqueId;
+            const target = document.getElementById(targetId);
+            if (target) target.classList.remove('hidden');
+        });
+    });
+});
+
+window.toggleApiKey = toggleApiKey;
+window.toggleQueryInterface = toggleQueryInterface;
+window.executeQuery = executeQuery;
+window.saveReport = saveReport;`}
+    </>
+  );
+}
+
 function TargetSummary({
   domain,
   url,
@@ -381,18 +701,19 @@ function InlineQueryInterface({
   schema: string;
   table: string;
 }) {
+  const uniqueId = `${schema}-${table}`;
   return (
     <div class="p-6">
       <div class="mb-4">
         <h4 class="text-sm font-semibold text-gray-800 font-mono mb-2">
           Query Interface: {schema}.{table}
         </h4>
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="space-y-6">
           <div>
-            <ModernQueryBuilder />
+            <ModernQueryBuilder uniqueId={uniqueId} />
           </div>
           <div>
-            <SmartResultsDisplay />
+            <SmartResultsDisplay uniqueId={uniqueId} />
           </div>
         </div>
       </div>
@@ -400,7 +721,7 @@ function InlineQueryInterface({
   );
 }
 
-function ModernQueryBuilder() {
+function ModernQueryBuilder({ uniqueId }: { uniqueId: string }) {
   return (
     <div class="space-y-4">
       <div>
@@ -408,7 +729,7 @@ function ModernQueryBuilder() {
           Operation
         </label>
         <select
-          id="query-operation"
+          id={`query-operation-${uniqueId}`}
           class="w-full p-2 border border-gray-300 rounded text-sm font-mono bg-white focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
         >
           <option value="select">SELECT</option>
@@ -418,14 +739,14 @@ function ModernQueryBuilder() {
         </select>
       </div>
 
-      <div id="select-query" class="query-type">
+      <div id={`select-query-${uniqueId}`} class="query-type">
         <div class="mb-3">
           <label class="block text-xs font-medium text-gray-600 mb-2 font-mono">
             Columns
           </label>
           <input
             type="text"
-            id="select-columns"
+            id={`select-columns-${uniqueId}`}
             placeholder="* or column1, column2, ..."
             class="w-full p-2 border border-gray-300 rounded text-sm font-mono bg-white focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
           />
@@ -436,7 +757,8 @@ function ModernQueryBuilder() {
           </label>
           <input
             type="number"
-            id="select-limit"
+            id={`select-limit-${uniqueId}`}
+            value="10"
             placeholder="10"
             class="w-full p-2 border border-gray-300 rounded text-sm font-mono bg-white focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
           />
@@ -447,20 +769,20 @@ function ModernQueryBuilder() {
           </label>
           <input
             type="text"
-            id="select-order"
+            id={`select-order-${uniqueId}`}
             placeholder="column_name asc/desc"
             class="w-full p-2 border border-gray-300 rounded text-sm font-mono bg-white focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
           />
         </div>
       </div>
 
-      <div id="insert-query" class="query-type hidden">
+      <div id={`insert-query-${uniqueId}`} class="query-type hidden">
         <div class="mb-3">
           <label class="block text-xs font-medium text-gray-600 mb-2 font-mono">
             Data (JSON)
           </label>
           <textarea
-            id="insert-data"
+            id={`insert-data-${uniqueId}`}
             rows="4"
             placeholder='{"column1": "value1", "column2": "value2"}'
             class="w-full p-2 border border-gray-300 rounded text-sm font-mono bg-white focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
@@ -468,13 +790,13 @@ function ModernQueryBuilder() {
         </div>
       </div>
 
-      <div id="update-query" class="query-type hidden">
+      <div id={`update-query-${uniqueId}`} class="query-type hidden">
         <div class="mb-3">
           <label class="block text-xs font-medium text-gray-600 mb-2 font-mono">
             Data (JSON)
           </label>
           <textarea
-            id="update-data"
+            id={`update-data-${uniqueId}`}
             rows="4"
             placeholder='{"column1": "new_value"}'
             class="w-full p-2 border border-gray-300 rounded text-sm font-mono bg-white focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
@@ -486,21 +808,21 @@ function ModernQueryBuilder() {
           </label>
           <input
             type="text"
-            id="update-filter"
+            id={`update-filter-${uniqueId}`}
             placeholder="column = 'value'"
             class="w-full p-2 border border-gray-300 rounded text-sm font-mono bg-white focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
           />
         </div>
       </div>
 
-      <div id="delete-query" class="query-type hidden">
+      <div id={`delete-query-${uniqueId}`} class="query-type hidden">
         <div class="mb-3">
           <label class="block text-xs font-medium text-gray-600 mb-2 font-mono">
             Filter
           </label>
           <input
             type="text"
-            id="delete-filter"
+            id={`delete-filter-${uniqueId}`}
             placeholder="column = 'value'"
             class="w-full p-2 border border-gray-300 rounded text-sm font-mono bg-white focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
           />
@@ -509,7 +831,7 @@ function ModernQueryBuilder() {
 
       <button
         class="w-full bg-slate-700 text-white py-2 px-4 rounded text-sm font-mono hover:bg-slate-800 transition-colors"
-        onclick="executeQuery()"
+        onclick={`executeQuery('${uniqueId}')`}
       >
         Execute Query
       </button>
@@ -517,7 +839,7 @@ function ModernQueryBuilder() {
   );
 }
 
-function SmartResultsDisplay() {
+function SmartResultsDisplay({ uniqueId }: { uniqueId: string }) {
   return (
     <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
       <div class="px-4 py-3 border-b border-gray-200 bg-gray-50">
@@ -525,7 +847,7 @@ function SmartResultsDisplay() {
       </div>
       <div class="relative">
         <div
-          id="query-results"
+          id={`query-results-${uniqueId}`}
           class="min-h-[300px] max-h-[500px] overflow-auto"
         >
           <div class="p-8 text-center text-gray-400 text-sm font-mono">
@@ -554,256 +876,7 @@ export abstract class HtmlRendererService {
           <title>Supabase Database Analysis Report</title>
           <script src="https://cdn.tailwindcss.com"></script>
           <script type="module">
-            {`
-            import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-            
-            const SUPABASE_URL = '${url}';
-            const SUPABASE_KEY = '${key}';
-            const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-            
-            window.supabase = supabase;
-            window.currentSchema = '';
-            window.currentTable = '';
-            
-            function toggleApiKey() {
-                const display = document.getElementById('api-key-display');
-                const button = event.target;
-                if (display.textContent.includes('...')) {
-                    display.textContent = '${key}';
-                    button.textContent = 'Hide Key';
-                } else {
-                    display.textContent = '${key.substring(0, 20)}...';
-                    button.textContent = 'Show Full Key';
-                }
-            }
-            
-            function toggleQueryInterface(schema, table) {
-                window.currentSchema = schema;
-                window.currentTable = table;
-                const interfaceId = \`query-interface-\${schema}-\${table}\`;
-                const interfaceEl = document.getElementById(interfaceId);
-                if (interfaceEl) {
-                    interfaceEl.classList.toggle('hidden');
-                }
-            }
-            
-            async function saveReport() {
-                try {
-                    // Generate filename with timestamp and domain
-                    const domain = '${result.summary.domain}';
-                    const timestamp = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-                    const filename = \`supabase-analysis-\${domain}-\${timestamp}.html\`;
-                    
-                    // Get the current HTML content
-                    const htmlContent = document.documentElement.outerHTML;
-                    
-                    // Check if File System Access API is supported
-                    if ('showSaveFilePicker' in window) {
-                        const fileHandle = await window.showSaveFilePicker({
-                            suggestedName: filename,
-                            types: [{
-                                description: 'HTML files',
-                                accept: {
-                                    'text/html': ['.html']
-                                }
-                            }]
-                        });
-                        
-                        const writable = await fileHandle.createWritable();
-                        await writable.write(htmlContent);
-                        await writable.close();
-                        
-                        // Show success message
-                        showNotification('Report saved successfully!', 'success');
-                    } else {
-                        // Fallback for browsers that don't support File System Access API
-                        const blob = new Blob([htmlContent], { type: 'text/html' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = filename;
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        URL.revokeObjectURL(url);
-                        
-                        showNotification('Report downloaded successfully!', 'success');
-                    }
-                } catch (error) {
-                    if (error.name === 'AbortError') {
-                        // User cancelled the save dialog
-                        return;
-                    }
-                    console.error('Error saving report:', error);
-                    showNotification('Failed to save report: ' + error.message, 'error');
-                }
-            }
-            
-            function showNotification(message, type = 'info') {
-                // Create notification element
-                const notification = document.createElement('div');
-                notification.className = \`fixed top-4 right-4 px-4 py-3 rounded-lg shadow-lg z-50 font-mono text-sm transition-all duration-300 transform translate-x-full\`;
-                
-                if (type === 'success') {
-                    notification.className += ' bg-emerald-100 text-emerald-800 border border-emerald-200';
-                } else if (type === 'error') {
-                    notification.className += ' bg-red-100 text-red-800 border border-red-200';
-                } else {
-                    notification.className += ' bg-blue-100 text-blue-800 border border-blue-200';
-                }
-                
-                notification.textContent = message;
-                document.body.appendChild(notification);
-                
-                // Animate in
-                setTimeout(() => {
-                    notification.classList.remove('translate-x-full');
-                }, 100);
-                
-                // Remove after 3 seconds
-                setTimeout(() => {
-                    notification.classList.add('translate-x-full');
-                    setTimeout(() => {
-                        document.body.removeChild(notification);
-                    }, 300);
-                }, 3000);
-            }
-            
-            function renderSmartTable(data) {
-                if (!data || data.length === 0) return '<div class="p-8 text-center text-gray-400 text-sm font-mono">No data</div>';
-                
-                const columns = Object.keys(data[0]);
-                const maxRows = Math.min(data.length, 100); // Limit to 100 rows for performance
-                
-                let html = \`
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-xs font-mono">
-                            <thead class="bg-gray-50 border-b border-gray-200">
-                                <tr>
-                                    \${columns.map(col => \`<th class="px-3 py-2 text-left font-semibold text-gray-700 border-r border-gray-200">\${col}</th>\`).join('')}
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-200">
-                \`;
-                
-                for (let i = 0; i < maxRows; i++) {
-                    const row = data[i];
-                    html += \`
-                        <tr class="hover:bg-gray-50">
-                            \${columns.map(col => {
-                                const value = row[col];
-                                const displayValue = value === null ? '<span class="text-gray-400 italic">null</span>' : 
-                                                  value === undefined ? '<span class="text-gray-400 italic">undefined</span>' :
-                                                  typeof value === 'object' ? \`<span class="text-blue-600">\${JSON.stringify(value)}</span>\` :
-                                                  String(value);
-                                return \`<td class="px-3 py-2 border-r border-gray-200 max-w-xs truncate" title="\${String(value)}">\${displayValue}</td>\`;
-                            }).join('')}
-                        </tr>
-                    \`;
-                }
-                
-                html += \`
-                            </tbody>
-                        </table>
-                    </div>
-                \`;
-                
-                if (data.length > maxRows) {
-                    html += \`<div class="px-3 py-2 text-xs text-gray-500 bg-gray-50 border-t border-gray-200">Showing \${maxRows} of \${data.length} rows</div>\`;
-                }
-                
-                return html;
-            }
-            
-            function executeQuery() {
-                const operation = document.getElementById('query-operation').value;
-                const resultsDiv = document.getElementById('query-results');
-                resultsDiv.innerHTML = '<div class="text-blue-600">Executing query...</div>';
-                
-                let query;
-                const table = supabase.schema(window.currentSchema).from(window.currentTable);
-                
-                try {
-                    switch(operation) {
-                        case 'select':
-                            const columns = document.getElementById('select-columns').value || '*';
-                            const limit = document.getElementById('select-limit').value;
-                            const order = document.getElementById('select-order').value;
-                            
-                            query = table.select(columns);
-                            if (limit) query = query.limit(parseInt(limit));
-                            if (order) {
-                                const [col, dir] = order.split(' ');
-                                query = query.order(col, { ascending: dir !== 'desc' });
-                            }
-                            break;
-                            
-                        case 'insert':
-                            const insertData = JSON.parse(document.getElementById('insert-data').value);
-                            query = table.insert(insertData);
-                            break;
-                            
-                        case 'update':
-                            const updateData = JSON.parse(document.getElementById('update-data').value);
-                            const updateFilter = document.getElementById('update-filter').value;
-                            query = table.update(updateData);
-                            if (updateFilter) {
-                                const parts = updateFilter.split(' ');
-                                if (parts.length >= 3) {
-                                    const [col, op, val] = parts;
-                                    if (op === '=' && val) query = query.eq(col, val.replace(/['"]/g, ''));
-                                }
-                            }
-                            break;
-                            
-                        case 'delete':
-                            const deleteFilter = document.getElementById('delete-filter').value;
-                            query = table.delete();
-                            if (deleteFilter) {
-                                const parts = deleteFilter.split(' ');
-                                if (parts.length >= 3) {
-                                    const [col, op, val] = parts;
-                                    if (op === '=' && val) query = query.eq(col, val.replace(/['"]/g, ''));
-                                }
-                            }
-                            break;
-                    }
-                    
-                    query.then(({ data, error }) => {
-                        if (error) {
-                            resultsDiv.innerHTML = \`<div class="p-4 text-red-600 text-sm font-mono bg-red-50 border border-red-200 rounded">Error: \${error.message}</div>\`;
-                        } else {
-                            if (data && data.length > 0) {
-                                resultsDiv.innerHTML = renderSmartTable(data);
-                            } else {
-                                resultsDiv.innerHTML = '<div class="p-8 text-center text-gray-400 text-sm font-mono">No data returned</div>';
-                            }
-                        }
-                    });
-                    
-                } catch (err) {
-                    resultsDiv.innerHTML = \`<div class="text-red-600">Error: \${err.message}</div>\`;
-                }
-            }
-            
-            // Show/hide query type sections
-            document.addEventListener('DOMContentLoaded', function() {
-                const operationSelect = document.getElementById('query-operation');
-                if (operationSelect) {
-                    operationSelect.addEventListener('change', function() {
-                        document.querySelectorAll('.query-type').forEach(el => el.classList.add('hidden'));
-                        const targetId = this.value + '-query';
-                        const target = document.getElementById(targetId);
-                        if (target) target.classList.remove('hidden');
-                    });
-                }
-            });
-            
-            window.toggleApiKey = toggleApiKey;
-            window.toggleQueryInterface = toggleQueryInterface;
-            window.executeQuery = executeQuery;
-            window.saveReport = saveReport;
-            `}
+            {ClientScript({ url, key, domain: result.summary.domain })}
           </script>
           <script>
             {`
