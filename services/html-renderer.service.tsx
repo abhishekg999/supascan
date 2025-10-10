@@ -33,15 +33,23 @@ function toggleApiKey() {
     }
 }
 
-function toggleQueryInterface(schema, table) {
-    window.currentSchema = schema;
-    window.currentTable = table;
-    const interfaceId = \`query-interface-\${schema}-\${table}\`;
-    const interfaceEl = document.getElementById(interfaceId);
-    if (interfaceEl) {
-        interfaceEl.classList.toggle('hidden');
-    }
-}
+            function toggleQueryInterface(schema, table) {
+                window.currentSchema = schema;
+                window.currentTable = table;
+                const interfaceId = \`query-interface-\${schema}-\${table}\`;
+                const interfaceEl = document.getElementById(interfaceId);
+                if (interfaceEl) {
+                    interfaceEl.classList.toggle('hidden');
+                }
+            }
+            
+            function toggleRPCInterface(uniqueId) {
+                const interfaceId = \`rpc-interface-\${uniqueId}\`;
+                const interfaceEl = document.getElementById(interfaceId);
+                if (interfaceEl) {
+                    interfaceEl.classList.toggle('hidden');
+                }
+            }
 
 async function saveReport() {
     try {
@@ -189,7 +197,7 @@ function renderSmartTable(data) {
     html += \`
                 </tbody>
             </table>
-        </div>
+                </div>
     \`;
     
     if (data.length > maxRows) {
@@ -291,12 +299,93 @@ function executeQuery(uniqueId) {
             resultsDiv.innerHTML = \`<div class="p-4 text-red-600 text-sm font-mono bg-red-50 border border-red-200 rounded">Execution error: \${err.message}</div>\`;
         });
         
-    } catch (err) {
-        resultsDiv.innerHTML = \`<div class="text-red-600">Error: \${err.message}</div>\`;
-    }
-}
-
-// Show/hide query type sections
+                } catch (err) {
+                    resultsDiv.innerHTML = \`<div class="text-red-600">Error: \${err.message}</div>\`;
+                }
+            }
+            
+            function executeRPC(rpcName, uniqueId, schema) {
+                const resultsDiv = document.getElementById(\`rpc-results-\${uniqueId}\`);
+                
+                // Loading feedback
+                resultsDiv.innerHTML = \`
+                    <div class="p-8 text-center">
+                        <div class="inline-flex items-center gap-3 text-slate-600 font-mono text-sm">
+                            <div class="animate-spin rounded-full h-4 w-4 border-2 border-slate-300 border-t-slate-600"></div>
+                            Executing RPC...
+                        </div>
+                    </div>
+                \`;
+                
+                try {
+                    // Collect parameters from form inputs
+                    const params = {};
+                    const paramInputs = document.querySelectorAll(\`[id^="rpc-param-"][id$="-\${uniqueId}"]\`);
+                    
+                    paramInputs.forEach(input => {
+                        const paramName = input.id.replace(\`rpc-param-\`, '').replace(\`-\${uniqueId}\`, '');
+                        const value = input.value.trim();
+                        
+                        if (value !== '') {
+                            // Try to parse as JSON for complex types, otherwise use as string
+                            try {
+                                params[paramName] = JSON.parse(value);
+                            } catch {
+                                // If JSON parsing fails, use the raw value
+                                params[paramName] = value;
+                            }
+                        }
+                    });
+                    
+                    console.log('Executing RPC:', rpcName, 'in schema:', schema, 'with params:', params);
+                    
+                    const cleanRpcName = rpcName.startsWith('rpc/') ? rpcName.slice(4) : rpcName;
+                    console.log('Clean RPC name:', cleanRpcName);
+                    
+                    const rpcCall = supabase.schema(schema).rpc(cleanRpcName, params);
+                    
+                    rpcCall.then(({ data, error }) => {
+                        console.log('RPC result:', { data, error });
+                        
+                        if (error) {
+                            console.error('RPC error:', error);
+                            resultsDiv.innerHTML = \`<div class="p-4 text-red-600 text-sm font-mono bg-red-50 border border-red-200 rounded">Error: \${error.message}</div>\`;
+                        } else {
+                            console.log('RPC successful, data:', data);
+                            if (data !== null && data !== undefined) {
+                                if (Array.isArray(data)) {
+                                    // If it's an array, render as table
+                                    if (data.length > 0) {
+                                        resultsDiv.innerHTML = renderSmartTable(data);
+                                    } else {
+                                        resultsDiv.innerHTML = '<div class="p-8 text-center text-gray-400 text-sm font-mono">RPC returned empty array</div>';
+                                    }
+                                } else {
+                                    // If it's a single value, display it nicely
+                                    resultsDiv.innerHTML = \`
+                                        <div class="p-6">
+                                            <div class="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                                                <div class="text-xs font-medium text-slate-600 font-mono mb-2">RPC Result:</div>
+                                                <div class="text-sm font-mono text-slate-900 break-all">\${escapeHtml(JSON.stringify(data, null, 2))}</div>
+                                            </div>
+                                        </div>
+                                    \`;
+                                }
+                            } else {
+                                resultsDiv.innerHTML = '<div class="p-8 text-center text-gray-400 text-sm font-mono">RPC executed successfully (no return value)</div>';
+                            }
+                        }
+                    }).catch((err) => {
+                        console.error('RPC execution error:', err);
+                        resultsDiv.innerHTML = \`<div class="p-4 text-red-600 text-sm font-mono bg-red-50 border border-red-200 rounded">Execution error: \${err.message}</div>\`;
+                    });
+                    
+                } catch (err) {
+                    resultsDiv.innerHTML = \`<div class="text-red-600">Error: \${err.message}</div>\`;
+                }
+            }
+            
+            // Show/hide query type sections
 document.addEventListener('DOMContentLoaded', function() {
     // Add event listeners to all operation selects
     document.querySelectorAll('[id^="query-operation-"]').forEach(select => {
@@ -308,14 +397,16 @@ document.addEventListener('DOMContentLoaded', function() {
             const targetId = this.value + '-query-' + uniqueId;
             const target = document.getElementById(targetId);
             if (target) target.classList.remove('hidden');
+                });
+            });
         });
-    });
-});
 
-window.toggleApiKey = toggleApiKey;
-window.toggleQueryInterface = toggleQueryInterface;
-window.executeQuery = executeQuery;
-window.saveReport = saveReport;`}
+            window.toggleApiKey = toggleApiKey;
+            window.toggleQueryInterface = toggleQueryInterface;
+            window.toggleRPCInterface = toggleRPCInterface;
+            window.executeQuery = executeQuery;
+            window.executeRPC = executeRPC;
+            window.saveReport = saveReport;`}
     </>
   );
 }
@@ -437,13 +528,13 @@ function SchemaSection({
   analysis: any;
 }) {
   const exposedCount = Object.values(analysis.tableAccess).filter(
-    (a: any) => a.status === "readable"
+    (a: any) => a.status === "readable",
   ).length;
   const deniedCount = Object.values(analysis.tableAccess).filter(
-    (a: any) => a.status === "denied"
+    (a: any) => a.status === "denied",
   ).length;
   const emptyCount = Object.values(analysis.tableAccess).filter(
-    (a: any) => a.status === "empty"
+    (a: any) => a.status === "empty",
   ).length;
 
   return (
@@ -469,7 +560,7 @@ function SchemaSection({
           tableAccess: analysis.tableAccess,
           schema,
         })}
-        {RPCFunctionsSection({ rpcFunctions: analysis.rpcFunctions })}
+        {RPCFunctionsSection({ rpcFunctions: analysis.rpcFunctions, schema })}
       </div>
     </div>
   );
@@ -508,7 +599,7 @@ function TablesSection({
                 table,
                 access: tableAccess[table],
                 schema,
-              })
+              }),
             )}
           </div>
         ) : (
@@ -581,7 +672,13 @@ function TableRow({
   );
 }
 
-function RPCFunctionsSection({ rpcFunctions }: { rpcFunctions: any[] }) {
+function RPCFunctionsSection({
+  rpcFunctions,
+  schema,
+}: {
+  rpcFunctions: any[];
+  schema: string;
+}) {
   return (
     <div>
       <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
@@ -601,7 +698,7 @@ function RPCFunctionsSection({ rpcFunctions }: { rpcFunctions: any[] }) {
       <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
         {rpcFunctions.length > 0 ? (
           <div class="divide-y divide-gray-200">
-            {rpcFunctions.map((rpc) => RPCFunctionCard({ rpc }))}
+            {rpcFunctions.map((rpc) => RPCFunctionCard({ rpc, schema }))}
           </div>
         ) : (
           <div class="p-8 text-center text-gray-500">
@@ -613,11 +710,18 @@ function RPCFunctionsSection({ rpcFunctions }: { rpcFunctions: any[] }) {
   );
 }
 
-function RPCFunctionCard({ rpc }: { rpc: any }) {
+function RPCFunctionCard({ rpc, schema }: { rpc: any; schema: string }) {
+  const uniqueId = `rpc-${rpc.name}`;
   return (
     <div class="p-4">
       <div class="flex items-center justify-between mb-3">
-        <h4 class="font-medium text-gray-900">{rpc.name}</h4>
+        <h4 class="font-medium text-gray-900 font-mono">{rpc.name}</h4>
+        <button
+          class="px-3 py-1 text-xs bg-slate-600 text-white rounded hover:bg-slate-700 transition-colors font-mono"
+          onclick={`toggleRPCInterface('${uniqueId}')`}
+        >
+          Execute
+        </button>
       </div>
       {rpc.parameters.length > 0 ? (
         <div>
@@ -629,14 +733,18 @@ function RPCFunctionCard({ rpc }: { rpc: any }) {
                 class="flex items-center justify-between text-sm"
               >
                 <div class="flex items-center">
-                  <span class="font-medium text-gray-900">{param.name}</span>
-                  <span class="text-gray-500 ml-2">{param.type}</span>
+                  <span class="font-medium text-gray-900 font-mono">
+                    {param.name}
+                  </span>
+                  <span class="text-gray-500 ml-2 font-mono">{param.type}</span>
                   {param.format && (
-                    <span class="text-gray-400 ml-1">({param.format})</span>
+                    <span class="text-gray-400 ml-1 font-mono">
+                      ({param.format})
+                    </span>
                   )}
                 </div>
                 <span
-                  class={`px-2 py-1 text-xs rounded-full ${
+                  class={`px-2 py-1 text-xs rounded-full font-mono ${
                     param.required
                       ? "bg-red-100 text-red-800"
                       : "bg-gray-100 text-gray-600"
@@ -649,8 +757,155 @@ function RPCFunctionCard({ rpc }: { rpc: any }) {
           </div>
         </div>
       ) : (
-        <div class="text-sm text-gray-500">No parameters</div>
+        <div class="text-sm text-gray-500 font-mono">No parameters</div>
       )}
+
+      <div
+        id={`rpc-interface-${uniqueId}`}
+        class="hidden border-t border-gray-200 bg-slate-50 mt-4"
+      >
+        <RPCInterface rpc={rpc} uniqueId={uniqueId} schema={schema} />
+      </div>
+    </div>
+  );
+}
+
+function RPCInterface({
+  rpc,
+  uniqueId,
+  schema,
+}: {
+  rpc: any;
+  uniqueId: string;
+  schema: string;
+}) {
+  return (
+    <div class="p-4">
+      <div class="mb-3">
+        <h4 class="text-xs font-semibold text-gray-800 font-mono mb-2">
+          RPC Interface: {schema}.{rpc.name}
+        </h4>
+        <div class="space-y-4">
+          <div>
+            <RPCParameterBuilder
+              rpc={rpc}
+              uniqueId={uniqueId}
+              schema={schema}
+            />
+          </div>
+          <div>
+            <RPCResultsDisplay uniqueId={uniqueId} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RPCParameterBuilder({
+  rpc,
+  uniqueId,
+  schema,
+}: {
+  rpc: any;
+  uniqueId: string;
+  schema: string;
+}) {
+  return (
+    <div class="space-y-3">
+      <div class="text-xs font-medium text-gray-600 font-mono mb-2">
+        Parameters
+      </div>
+
+      {rpc.parameters.length > 0 ? (
+        <div class="space-y-3">
+          {rpc.parameters.map((param: any) => (
+            <div key={param.name}>
+              <label class="block text-xs font-medium text-gray-600 mb-1 font-mono">
+                {param.name} ({param.type})
+                {param.required && <span class="text-red-500 ml-1">*</span>}
+              </label>
+              {param.type === "string" || param.type === "text" ? (
+                <input
+                  type="text"
+                  id={`rpc-param-${param.name}-${uniqueId}`}
+                  placeholder={param.description || `Enter ${param.name}`}
+                  class="w-full p-2 border border-gray-300 rounded text-xs font-mono bg-white focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
+                />
+              ) : param.type === "number" || param.type === "integer" ? (
+                <input
+                  type="number"
+                  id={`rpc-param-${param.name}-${uniqueId}`}
+                  placeholder={param.description || `Enter ${param.name}`}
+                  class="w-full p-2 border border-gray-300 rounded text-xs font-mono bg-white focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
+                />
+              ) : param.type === "boolean" ? (
+                <select
+                  id={`rpc-param-${param.name}-${uniqueId}`}
+                  class="w-full p-2 border border-gray-300 rounded text-xs font-mono bg-white focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
+                >
+                  <option value="">Select...</option>
+                  <option value="true">true</option>
+                  <option value="false">false</option>
+                </select>
+              ) : (
+                <textarea
+                  id={`rpc-param-${param.name}-${uniqueId}`}
+                  rows="3"
+                  placeholder={
+                    param.description || `Enter ${param.name} (${param.type})`
+                  }
+                  class="w-full p-2 border border-gray-300 rounded text-xs font-mono bg-white focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
+                />
+              )}
+              {param.description && (
+                <div class="text-xs text-gray-500 mt-1 font-mono">
+                  {param.description}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div class="text-xs text-gray-500 font-mono">
+          No parameters required
+        </div>
+      )}
+
+      <div class="flex items-center gap-3">
+        <button
+          class="px-4 py-2 bg-slate-700 text-white rounded text-xs font-mono hover:bg-slate-800 transition-colors"
+          onclick={`executeRPC('${rpc.name}', '${uniqueId}', '${schema}')`}
+        >
+          Execute RPC
+        </button>
+        <div class="text-xs text-gray-500 font-mono">
+          Schema:{" "}
+          <span id={`rpc-schema-${uniqueId}`} class="font-semibold">
+            {schema}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RPCResultsDisplay({ uniqueId }: { uniqueId: string }) {
+  return (
+    <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+      <div class="px-3 py-2 border-b border-gray-200 bg-gray-50">
+        <h5 class="text-xs font-semibold text-gray-700 font-mono">Results</h5>
+      </div>
+      <div class="relative">
+        <div
+          id={`rpc-results-${uniqueId}`}
+          class="min-h-[300px] max-h-[500px] overflow-auto"
+        >
+          <div class="p-6 text-center text-gray-400 text-sm font-mono">
+            RPC results will appear here...
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -669,7 +924,7 @@ function InlineQueryInterface({
         <h4 class="text-xs font-semibold text-gray-800 font-mono mb-2">
           Query Interface: {schema}.{table}
         </h4>
-        <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <div class="space-y-4">
           <div>
             <ModernQueryBuilder uniqueId={uniqueId} />
           </div>
@@ -802,11 +1057,11 @@ function ModernQueryBuilder({ uniqueId }: { uniqueId: string }) {
 
 function SmartResultsDisplay({ uniqueId }: { uniqueId: string }) {
   return (
-    <div class="bg-white border border-gray-200 rounded-lg overflow-hidden h-full">
+    <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
       <div class="px-3 py-2 border-b border-gray-200 bg-gray-50">
         <h5 class="text-xs font-semibold text-gray-700 font-mono">Results</h5>
       </div>
-      <div class="relative h-full">
+      <div class="relative">
         <div
           id={`query-results-${uniqueId}`}
           class="min-h-[400px] max-h-[600px] overflow-auto"
@@ -824,7 +1079,7 @@ export abstract class HtmlRendererService {
   public static generateHtmlReport(
     result: AnalysisResult,
     url: string,
-    key: string
+    key: string,
   ) {
     return (
       <html lang="en">
@@ -990,7 +1245,7 @@ export abstract class HtmlRendererService {
                 Database Analysis
               </h2>
               {Object.entries(result.schemaDetails).map(([schema, analysis]) =>
-                SchemaSection({ schema, analysis })
+                SchemaSection({ schema, analysis }),
               )}
             </section>
 
