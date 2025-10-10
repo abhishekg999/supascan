@@ -196,7 +196,7 @@ export abstract class SupabaseService {
     if (debug) log.debug(`Calling RPC: ${schema}.${rpcName}`, args);
 
     try {
-      let query = client.rpc(rpcName, args);
+      let query = client.schema(schema).rpc(rpcName, args);
 
       if (options.limit && !options.explain) {
         query = query.limit(options.limit);
