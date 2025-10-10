@@ -334,10 +334,10 @@ function TargetSummary({
   jwtInfo?: any;
 }) {
   return (
-    <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8 fade-in">
-      <h2 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+    <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6 fade-in">
+      <h2 class="text-lg font-semibold text-gray-900 mb-3 flex items-center">
         <svg
-          class="w-5 h-5 mr-2 text-supabase-green"
+          class="w-4 h-4 mr-2 text-supabase-green"
           fill="currentColor"
           viewBox="0 0 20 20"
         >
@@ -349,14 +349,14 @@ function TargetSummary({
         </svg>
         Target Summary
       </h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div>
-          <label class="text-sm font-medium text-gray-500">Domain</label>
-          <p class="text-lg font-semibold text-gray-900">{domain}</p>
+          <label class="text-xs font-medium text-gray-500">Domain</label>
+          <p class="text-sm font-semibold text-gray-900 font-mono">{domain}</p>
         </div>
         {MetadataDisplay({ metadata })}
+        {JWTInfoDisplay({ jwtInfo })}
       </div>
-      {JWTInfoDisplay({ jwtInfo })}
       {APICredentialsDisplay({ url, key })}
     </section>
   );
@@ -486,23 +486,23 @@ function SchemaSection({
   ).length;
 
   return (
-    <div class="mb-12">
-      <div class="flex items-center justify-between mb-6">
-        <h2 class="text-2xl font-bold text-gray-900">Schema: {schema}</h2>
-        <div class="flex items-center gap-4 text-sm text-gray-600">
-          <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full">
+    <div class="mb-8">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-bold text-gray-900">Schema: {schema}</h2>
+        <div class="flex items-center gap-3 text-xs text-gray-600">
+          <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full">
             {analysis.tables.length} Tables
           </span>
-          <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
+          <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
             {analysis.rpcs.length} RPCs
           </span>
-          <span class="bg-gray-100 text-gray-800 px-3 py-1 rounded-full">
+          <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded-full">
             {exposedCount} exposed • {emptyCount} empty • {deniedCount} denied
           </span>
         </div>
       </div>
 
-      <div class="space-y-8">
+      <div class="space-y-6">
         {TablesSection({
           tables: analysis.tables,
           tableAccess: analysis.tableAccess,
@@ -703,12 +703,12 @@ function InlineQueryInterface({
 }) {
   const uniqueId = `${schema}-${table}`;
   return (
-    <div class="p-6">
-      <div class="mb-4">
-        <h4 class="text-sm font-semibold text-gray-800 font-mono mb-2">
+    <div class="p-4">
+      <div class="mb-3">
+        <h4 class="text-xs font-semibold text-gray-800 font-mono mb-2">
           Query Interface: {schema}.{table}
         </h4>
-        <div class="space-y-6">
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
           <div>
             <ModernQueryBuilder uniqueId={uniqueId} />
           </div>
@@ -841,16 +841,16 @@ function ModernQueryBuilder({ uniqueId }: { uniqueId: string }) {
 
 function SmartResultsDisplay({ uniqueId }: { uniqueId: string }) {
   return (
-    <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
-      <div class="px-4 py-3 border-b border-gray-200 bg-gray-50">
+    <div class="bg-white border border-gray-200 rounded-lg overflow-hidden h-full">
+      <div class="px-3 py-2 border-b border-gray-200 bg-gray-50">
         <h5 class="text-xs font-semibold text-gray-700 font-mono">Results</h5>
       </div>
-      <div class="relative">
+      <div class="relative h-full">
         <div
           id={`query-results-${uniqueId}`}
-          class="min-h-[300px] max-h-[500px] overflow-auto"
+          class="min-h-[400px] max-h-[600px] overflow-auto"
         >
-          <div class="p-8 text-center text-gray-400 text-sm font-mono">
+          <div class="p-6 text-center text-gray-400 text-sm font-mono">
             Results will appear here...
           </div>
         </div>
@@ -895,6 +895,19 @@ export abstract class HtmlRendererService {
           <style>
             {`
             @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap');
+            
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            
+            html, body {
+                margin: 0;
+                padding: 0;
+                width: 100%;
+                height: 100%;
+            }
             
             body {
                 font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -945,31 +958,31 @@ export abstract class HtmlRendererService {
             `}
           </style>
         </head>
-        <body class="bg-slate-50 min-h-screen scrollbar-thin">
-          <div class="container mx-auto px-6 py-8 max-w-7xl">
+        <body class="bg-slate-50 min-h-screen scrollbar-thin m-0 p-0">
+          <div class="w-full min-h-screen px-6 py-6">
             {/* Header */}
-            <header class="bg-white rounded-xl shadow-sm border border-slate-200 p-8 mb-8 fade-in">
+            <header class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6 fade-in">
               <div class="flex items-center justify-between">
-                <div>
-                  <h1 class="text-3xl font-bold text-slate-900 mb-2 font-mono">
+                <div class="flex-1">
+                  <h1 class="text-2xl font-bold text-slate-900 mb-1 font-mono">
                     Supabase Database Analysis
                   </h1>
                   <p class="text-slate-600 font-mono text-sm">
                     Generated on {new Date().toLocaleString()}
                   </p>
                 </div>
-                <div class="flex items-center gap-6">
+                <div class="flex items-center gap-8">
                   <div class="text-right">
-                    <div class="text-sm text-slate-500 font-mono">
+                    <div class="text-xs text-slate-500 font-mono">
                       Schemas Analyzed
                     </div>
-                    <div class="text-2xl font-bold text-emerald-600 font-mono">
+                    <div class="text-xl font-bold text-emerald-600 font-mono">
                       {result.schemas.length}
                     </div>
                   </div>
                   <button
                     onclick="saveReport()"
-                    class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-mono text-sm flex items-center gap-2"
+                    class="px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-mono text-sm flex items-center gap-2"
                   >
                     <svg
                       class="w-4 h-4"
