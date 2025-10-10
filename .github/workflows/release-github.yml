@@ -1,4 +1,4 @@
-name: Create new Release
+name: Create GitHub Release
 on:
   push:
     branches: [master]
@@ -49,7 +49,7 @@ jobs:
           git tag v${{ steps.pkg.outputs.version }}
           git push origin v${{ steps.pkg.outputs.version }}
 
-  publish:
+  github-release:
     needs: release
     runs-on: ubuntu-latest
     permissions:
@@ -71,11 +71,6 @@ jobs:
       - run: bun run lint
       - run: bun run test
       - run: bun run build
-
-      - name: Publish to npm
-        run: bun publish --access public
-        env:
-          NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
