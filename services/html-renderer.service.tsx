@@ -533,13 +533,13 @@ function SchemaSection({
   analysis: any;
 }) {
   const exposedCount = Object.values(analysis.tableAccess).filter(
-    (a: any) => a.status === "readable",
+    (a: any) => a.status === "readable"
   ).length;
   const deniedCount = Object.values(analysis.tableAccess).filter(
-    (a: any) => a.status === "denied",
+    (a: any) => a.status === "denied"
   ).length;
   const emptyCount = Object.values(analysis.tableAccess).filter(
-    (a: any) => a.status === "empty",
+    (a: any) => a.status === "empty"
   ).length;
 
   return (
@@ -604,7 +604,7 @@ function TablesSection({
                 table,
                 access: tableAccess[table],
                 schema,
-              }),
+              })
             )}
           </div>
         ) : (
@@ -728,42 +728,22 @@ function RPCFunctionCard({ rpc, schema }: { rpc: any; schema: string }) {
           Execute
         </button>
       </div>
-      {rpc.parameters.length > 0 ? (
-        <div>
-          <div class="text-sm font-medium text-gray-700 mb-2">Parameters:</div>
-          <div class="space-y-2">
-            {rpc.parameters.map((param: any) => (
-              <div
-                key={param.name}
-                class="flex items-center justify-between text-sm"
-              >
-                <div class="flex items-center">
-                  <span class="font-medium text-gray-900 font-mono">
-                    {param.name}
-                  </span>
-                  <span class="text-gray-500 ml-2 font-mono">{param.type}</span>
-                  {param.format && (
-                    <span class="text-gray-400 ml-1 font-mono">
-                      ({param.format})
-                    </span>
-                  )}
-                </div>
-                <span
-                  class={`px-2 py-1 text-xs rounded-full font-mono ${
-                    param.required
-                      ? "bg-red-100 text-red-800"
-                      : "bg-gray-100 text-gray-600"
-                  }`}
-                >
-                  {param.required ? "required" : "optional"}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <div class="text-sm text-gray-500 font-mono">No parameters</div>
-      )}
+      <div class="text-xs text-gray-600 font-mono">
+        {rpc.parameters.length > 0 ? (
+          <>
+            {rpc.parameters.length} parameter
+            {rpc.parameters.length !== 1 ? "s" : ""}
+            {rpc.parameters.filter((p: any) => p.required).length > 0 && (
+              <span class="text-red-600 ml-1">
+                ({rpc.parameters.filter((p: any) => p.required).length}{" "}
+                required)
+              </span>
+            )}
+          </>
+        ) : (
+          "No parameters"
+        )}
+      </div>
 
       <div
         id={`rpc-interface-${uniqueId}`}
@@ -1084,7 +1064,7 @@ export abstract class HtmlRendererService {
   public static generateHtmlReport(
     result: AnalysisResult,
     url: string,
-    key: string,
+    key: string
   ) {
     return (
       <html lang="en">
@@ -1250,7 +1230,7 @@ export abstract class HtmlRendererService {
                 Database Analysis
               </h2>
               {Object.entries(result.schemaDetails).map(([schema, analysis]) =>
-                SchemaSection({ schema, analysis }),
+                SchemaSection({ schema, analysis })
               )}
             </section>
 
