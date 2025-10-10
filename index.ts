@@ -33,7 +33,7 @@ program
     "--dump <schema.table|schema>",
     "Dump data from specific table or swagger JSON from schema",
   )
-  .option("--limit <number>", "Limit rows for dump", "10")
+  .option("--limit <number>", "Limit rows for dump or RPC results", "10")
   .option(
     "--rpc <schema.rpc_name>",
     "Call an RPC function (read-only operations only)",
@@ -227,6 +227,7 @@ program
         {
           get: true,
           explain: options.explain,
+          limit: parseInt(options.limit),
         },
       );
 

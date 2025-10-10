@@ -187,6 +187,7 @@ export abstract class SupabaseService {
     options: {
       get?: boolean;
       explain?: boolean;
+      limit?: number;
     } = {
       get: false,
       explain: false,
@@ -195,7 +196,11 @@ export abstract class SupabaseService {
     if (debug) log.debug(`Calling RPC: ${schema}.${rpcName}`, args);
 
     try {
-      const query = client.rpc(rpcName, args);
+      let query = client.rpc(rpcName, args);
+
+      if (options.limit && !options.explain) {
+        query = query.limit(options.limit);
+      }
 
       const { data, error } = options.explain
         ? await query.explain({
