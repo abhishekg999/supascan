@@ -334,10 +334,10 @@ function TargetSummary({
   jwtInfo?: any;
 }) {
   return (
-    <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6 fade-in">
-      <h2 class="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+    <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-3 mb-4 fade-in">
+      <h2 class="text-sm font-semibold text-gray-900 mb-2 flex items-center">
         <svg
-          class="w-4 h-4 mr-2 text-supabase-green"
+          class="w-3 h-3 mr-1 text-supabase-green"
           fill="currentColor"
           viewBox="0 0 20 20"
         >
@@ -349,15 +349,15 @@ function TargetSummary({
         </svg>
         Target Summary
       </h2>
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 xl:grid-cols-4 gap-3">
         <div>
           <label class="text-xs font-medium text-gray-500">Domain</label>
-          <p class="text-sm font-semibold text-gray-900 font-mono">{domain}</p>
+          <p class="text-xs font-semibold text-gray-900 font-mono">{domain}</p>
         </div>
         {MetadataDisplay({ metadata })}
         {JWTInfoDisplay({ jwtInfo })}
+        {APICredentialsDisplay({ url, key })}
       </div>
-      {APICredentialsDisplay({ url, key })}
     </section>
   );
 }
@@ -379,8 +379,10 @@ function MetadataDisplay({ metadata }: { metadata?: any }) {
     <>
       {metadataItems.map((item) => (
         <div>
-          <label class="text-sm font-medium text-gray-500">{item.label}</label>
-          <p class="text-lg font-semibold text-gray-900">{item.value}</p>
+          <label class="text-xs font-medium text-gray-500">{item.label}</label>
+          <p class="text-xs font-semibold text-gray-900 font-mono">
+            {item.value}
+          </p>
         </div>
       ))}
     </>
@@ -391,43 +393,13 @@ function JWTInfoDisplay({ jwtInfo }: { jwtInfo?: any }) {
   if (!jwtInfo) return "";
 
   return (
-    <div class="mt-6 pt-6 border-t border-gray-200">
-      <h3 class="text-lg font-medium text-gray-900 mb-3">
-        JWT Token Information
-      </h3>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {jwtInfo.iss && (
-          <div>
-            <label class="text-sm font-medium text-gray-500">Issuer</label>
-            <p class="text-sm text-gray-900">{jwtInfo.iss}</p>
-          </div>
-        )}
-        {jwtInfo.aud && (
-          <div>
-            <label class="text-sm font-medium text-gray-500">Audience</label>
-            <p class="text-sm text-gray-900">{jwtInfo.aud}</p>
-          </div>
-        )}
-        {jwtInfo.role && (
-          <div>
-            <label class="text-sm font-medium text-gray-500">Role</label>
-            <p class="text-sm text-gray-900">{jwtInfo.role}</p>
-          </div>
-        )}
+    <div>
+      <label class="text-xs font-medium text-gray-500">JWT Info</label>
+      <div class="text-xs text-gray-900 font-mono">
+        {jwtInfo.role && <div>Role: {jwtInfo.role}</div>}
         {jwtInfo.exp && (
           <div>
-            <label class="text-sm font-medium text-gray-500">Expires</label>
-            <p class="text-sm text-gray-900">
-              {new Date(jwtInfo.exp * 1000).toISOString()}
-            </p>
-          </div>
-        )}
-        {jwtInfo.iat && (
-          <div>
-            <label class="text-sm font-medium text-gray-500">Issued</label>
-            <p class="text-sm text-gray-900">
-              {new Date(jwtInfo.iat * 1000).toISOString()}
-            </p>
+            Expires: {new Date(jwtInfo.exp * 1000).toLocaleDateString()}
           </div>
         )}
       </div>
@@ -437,31 +409,20 @@ function JWTInfoDisplay({ jwtInfo }: { jwtInfo?: any }) {
 
 function APICredentialsDisplay({ url, key }: { url: string; key: string }) {
   return (
-    <div class="mt-6 pt-6 border-t border-gray-200">
-      <h3 class="text-lg font-medium text-gray-900 mb-3">API Credentials</h3>
-      <div class="grid grid-cols-1 gap-4">
-        <div>
-          <label class="text-sm font-medium text-gray-500">Supabase URL</label>
-          <p class="text-sm text-gray-900 font-mono bg-gray-100 p-2 rounded">
-            {url}
-          </p>
+    <div>
+      <label class="text-xs font-medium text-gray-500">API Credentials</label>
+      <div class="text-xs text-gray-900 font-mono">
+        <div class="truncate" title={url}>
+          URL: {url}
         </div>
-        <div>
-          <label class="text-sm font-medium text-gray-500">API Key</label>
-          <div class="flex items-center gap-2">
-            <p
-              class="text-sm text-gray-900 font-mono bg-gray-100 p-2 rounded flex-1"
-              id="api-key-display"
-            >
-              {key.substring(0, 20)}...
-            </p>
-            <button
-              class="px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded hover:bg-blue-200 transition-colors"
-              onclick="toggleApiKey()"
-            >
-              Show Full Key
-            </button>
-          </div>
+        <div class="flex items-center gap-1">
+          <span>Key: {key.substring(0, 20)}...</span>
+          <button
+            class="px-1 py-0.5 text-xs bg-blue-100 text-blue-800 rounded hover:bg-blue-200 transition-colors"
+            onclick="toggleApiKey()"
+          >
+            Show
+          </button>
         </div>
       </div>
     </div>
@@ -476,13 +437,13 @@ function SchemaSection({
   analysis: any;
 }) {
   const exposedCount = Object.values(analysis.tableAccess).filter(
-    (a: any) => a.status === "readable",
+    (a: any) => a.status === "readable"
   ).length;
   const deniedCount = Object.values(analysis.tableAccess).filter(
-    (a: any) => a.status === "denied",
+    (a: any) => a.status === "denied"
   ).length;
   const emptyCount = Object.values(analysis.tableAccess).filter(
-    (a: any) => a.status === "empty",
+    (a: any) => a.status === "empty"
   ).length;
 
   return (
@@ -547,7 +508,7 @@ function TablesSection({
                 table,
                 access: tableAccess[table],
                 schema,
-              }),
+              })
             )}
           </div>
         ) : (
@@ -863,7 +824,7 @@ export abstract class HtmlRendererService {
   public static generateHtmlReport(
     result: AnalysisResult,
     url: string,
-    key: string,
+    key: string
   ) {
     return (
       <html lang="en">
@@ -1029,7 +990,7 @@ export abstract class HtmlRendererService {
                 Database Analysis
               </h2>
               {Object.entries(result.schemaDetails).map(([schema, analysis]) =>
-                SchemaSection({ schema, analysis }),
+                SchemaSection({ schema, analysis })
               )}
             </section>
 
