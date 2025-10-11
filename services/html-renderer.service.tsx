@@ -533,13 +533,13 @@ function SchemaSection({
   analysis: any;
 }) {
   const exposedCount = Object.values(analysis.tableAccess).filter(
-    (a: any) => a.status === "readable",
+    (a: any) => a.status === "readable"
   ).length;
   const deniedCount = Object.values(analysis.tableAccess).filter(
-    (a: any) => a.status === "denied",
+    (a: any) => a.status === "denied"
   ).length;
   const emptyCount = Object.values(analysis.tableAccess).filter(
-    (a: any) => a.status === "empty",
+    (a: any) => a.status === "empty"
   ).length;
 
   return (
@@ -554,7 +554,7 @@ function SchemaSection({
             {analysis.rpcs.length} RPCs
           </span>
           <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded-full">
-            {exposedCount} exposed • {emptyCount} empty • {deniedCount} denied
+            {exposedCount} exposed | {emptyCount} empty | {deniedCount} denied
           </span>
         </div>
       </div>
@@ -604,7 +604,7 @@ function TablesSection({
                 table,
                 access: tableAccess[table],
                 schema,
-              }),
+              })
             )}
           </div>
         ) : (
@@ -632,17 +632,17 @@ function TableRow({
     case "readable":
       statusClass = "bg-green-100 text-green-800 border-green-200";
       statusText = "Data exposed";
-      statusIcon = "✓";
+      statusIcon = "[+]";
       break;
     case "empty":
       statusClass = "bg-yellow-100 text-yellow-800 border-yellow-200";
       statusText = "Empty or RLS protected";
-      statusIcon = "○";
+      statusIcon = "[-]";
       break;
     case "denied":
       statusClass = "bg-red-100 text-red-800 border-red-200";
       statusText = "Access denied";
-      statusIcon = "✗";
+      statusIcon = "[X]";
       break;
   }
 
@@ -1064,7 +1064,7 @@ export abstract class HtmlRendererService {
   public static generateHtmlReport(
     result: AnalysisResult,
     url: string,
-    key: string,
+    key: string
   ) {
     return (
       <html lang="en">
@@ -1230,7 +1230,7 @@ export abstract class HtmlRendererService {
                 Database Analysis
               </h2>
               {Object.entries(result.schemaDetails).map(([schema, analysis]) =>
-                SchemaSection({ schema, analysis }),
+                SchemaSection({ schema, analysis })
               )}
             </section>
 

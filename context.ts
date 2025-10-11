@@ -24,9 +24,7 @@ export async function createCLIContext(options: {
   let url = options.url;
   let key = options.key;
 
-  // Handle credential extraction if requested
   if (options.extract) {
-    // Create a temporary context for extraction
     const tempCtx: CLIContext = {
       debug: options.debug || false,
       json: false,
@@ -64,12 +62,10 @@ export async function createCLIContext(options: {
     }
   }
 
-  // Validate required credentials
   if (!url || !key) {
     throw new Error("Either provide --url and --key, or use --extract <url>");
   }
 
-  // Create Supabase client
   const client = createClient(url, key);
 
   return {

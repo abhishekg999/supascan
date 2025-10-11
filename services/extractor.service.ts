@@ -127,7 +127,6 @@ export abstract class ExtractorService {
   ): Result<ExtractedCredentials> {
     log.debug(ctx, "Extracting Supabase credentials...");
 
-    // First, try to find createBrowserClient pattern (most specific)
     const createBrowserClientMatch =
       this.CREATE_BROWSER_CLIENT_PATTERN.exec(content);
     if (createBrowserClientMatch) {
@@ -143,7 +142,6 @@ export abstract class ExtractorService {
       }
     }
 
-    // Fallback to the original closest pairs method
     const pairs = this.findClosestPairs(content);
 
     log.debug(ctx, `Found ${pairs.length} potential URL-key pairs`);

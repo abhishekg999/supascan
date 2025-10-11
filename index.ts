@@ -40,7 +40,6 @@ program
   .option("--suppress-experimental-warnings", "Suppress experimental warnings")
   .action(async (options) => {
     try {
-      // Check for mutual exclusivity of json and html
       if (options.json && options.html) {
         log.error("Cannot use --json and --html together. Please choose one.");
         process.exit(1);

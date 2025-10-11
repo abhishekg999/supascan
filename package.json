@@ -1,8 +1,9 @@
 {
   "name": "supascan",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "Security analysis tool for Supabase databases",
   "license": "MIT",
+  "author": "Abhishek Govindarasu",
   "main": "dist/supascan.js",
   "type": "module",
   "bin": {
@@ -11,6 +12,26 @@
   "files": [
     "dist/supascan.js"
   ],
+  "keywords": [
+    "supabase",
+    "security",
+    "analysis",
+    "cli",
+    "database",
+    "rls",
+    "postgres",
+    "security-audit",
+    "penetration-testing",
+    "vulnerability-scanner"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/abhishekg999/supascan.git"
+  },
+  "homepage": "https://github.com/abhishekg999/supascan#readme",
+  "bugs": {
+    "url": "https://github.com/abhishekg999/supascan/issues"
+  },
   "scripts": {
     "lint": "tsc --noEmit",
     "start": "bun run index.ts",

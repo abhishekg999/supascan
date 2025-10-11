@@ -134,7 +134,7 @@ export abstract class SupabaseService {
         if (path.startsWith("/rpc/")) {
           const rpcName = path.slice(1);
 
-          const postMethod = methods.post; // TODO: is this right?
+          const postMethod = methods.post;
           if (postMethod && postMethod.parameters) {
             const parameters: RPCParameter[] = [];
 
