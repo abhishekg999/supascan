@@ -533,13 +533,13 @@ function SchemaSection({
   analysis: any;
 }) {
   const exposedCount = Object.values(analysis.tableAccess).filter(
-    (a: any) => a.status === "readable"
+    (a: any) => a.status === "readable",
   ).length;
   const deniedCount = Object.values(analysis.tableAccess).filter(
-    (a: any) => a.status === "denied"
+    (a: any) => a.status === "denied",
   ).length;
   const emptyCount = Object.values(analysis.tableAccess).filter(
-    (a: any) => a.status === "empty"
+    (a: any) => a.status === "empty",
   ).length;
 
   return (
@@ -604,7 +604,7 @@ function TablesSection({
                 table,
                 access: tableAccess[table],
                 schema,
-              })
+              }),
             )}
           </div>
         ) : (
@@ -1064,7 +1064,7 @@ export abstract class HtmlRendererService {
   public static generateHtmlReport(
     result: AnalysisResult,
     url: string,
-    key: string
+    key: string,
   ) {
     return (
       <html lang="en">
@@ -1230,7 +1230,7 @@ export abstract class HtmlRendererService {
                 Database Analysis
               </h2>
               {Object.entries(result.schemaDetails).map(([schema, analysis]) =>
-                SchemaSection({ schema, analysis })
+                SchemaSection({ schema, analysis }),
               )}
             </section>
 

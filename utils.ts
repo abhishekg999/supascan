@@ -1,8 +1,8 @@
 import { spawn } from "child_process";
-import { createConsola } from "consola";
 import { writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
+import pc from "picocolors";
 import type { CLIContext } from "./context";
 
 export type Ok<T> = {
@@ -23,24 +23,27 @@ export const ok = <T>(value: T): Result<T> => ({ value, success: true });
 
 export const err = <T>(error: Error): Result<T> => ({ error, success: false });
 
-const baseLogger = createConsola({
-  level: 4,
-  formatOptions: { compact: true },
-  stdout: process.stderr,
-  stderr: process.stderr,
-});
+const formatMessage = (level: string, message: any, ...args: any[]) => {
+  const msg = [message, ...args]
+    .map((arg) => (typeof arg === "object" ? JSON.stringify(arg) : String(arg)))
+    .join(" ");
+  return `${level} ${msg}`;
+};
 
 export const log = {
   debug: (ctx: CLIContext, message: any, ...args: any[]) => {
     if (ctx.debug) {
-      baseLogger.debug(message, ...args);
+      console.error(formatMessage(pc.gray("[DEBUG]"), message, ...args));
     }
   },
-  info: (message: any, ...args: any[]) => baseLogger.info(message, ...args),
+  info: (message: any, ...args: any[]) =>
+    console.error(formatMessage(pc.blue("[INFO]"), message, ...args)),
   success: (message: any, ...args: any[]) =>
-    baseLogger.success(message, ...args),
-  warn: (message: any, ...args: any[]) => baseLogger.warn(message, ...args),
-  error: (message: any, ...args: any[]) => baseLogger.error(message, ...args),
+    console.error(formatMessage(pc.green("[OK]"), message, ...args)),
+  warn: (message: any, ...args: any[]) =>
+    console.error(formatMessage(pc.yellow("[WARN]"), message, ...args)),
+  error: (message: any, ...args: any[]) =>
+    console.error(formatMessage(pc.red("[ERROR]"), message, ...args)),
 };
 
 export const onlyOnce = <T>(fn: () => T) => {
