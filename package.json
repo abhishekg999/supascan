@@ -38,7 +38,7 @@
     "format": "prettier --write .",
     "build": "bun run build:binary && bun run build:bundle",
     "build:binary": "bun run lint && bun build --compile --minify --outfile dist/supascan ./index.ts",
-    "build:bundle": "bun run lint && bun build --target node --outfile dist/supascan.js ./index.ts",
+    "build:bundle": "bun run lint && bun build --minify --target node --outfile dist/supascan.js ./index.ts",
     "test": "bun test",
     "prepublishOnly": "bun run build:bundle"
   },

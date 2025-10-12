@@ -14,9 +14,6 @@ jobs:
     permissions:
       contents: write
       id-token: write
-    outputs:
-      exists: ${{ steps.tag-check.outputs.exists }}
-      version: ${{ steps.pkg.outputs.version }}
 
     steps:
       - uses: actions/checkout@v4
@@ -51,30 +48,23 @@ jobs:
           git tag v${{ steps.pkg.outputs.version }}
           git push origin v${{ steps.pkg.outputs.version }}
 
-  github-release:
-    needs: release
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      id-token: write
-
-    if: needs.release.outputs.exists == 'false'
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: ".bun-version"
-
-      - run: bun install --frozen-lockfile
-      - run: bun run build:binary
+      - name: Check if release exists
+        id: release-check
+        run: |
+          if gh release view "v${{ steps.pkg.outputs.version }}" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
 
       - name: Create GitHub Release
+        if: steps.release-check.outputs.exists == 'false'
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ needs.release.outputs.version }}
-          name: Release v${{ needs.release.outputs.version }}
+          tag_name: v${{ steps.pkg.outputs.version }}
+          name: Release v${{ steps.pkg.outputs.version }}
           generate_release_notes: true
           files: |
             dist/supascan
