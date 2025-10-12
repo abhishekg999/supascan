@@ -111,19 +111,24 @@ export const openInBrowser = (filePath: string): void => {
   let command: string;
   let args: string[];
 
-  switch (platform) {
-    case "darwin":
-      command = "open";
-      args = [filePath];
-      break;
-    case "win32":
-      command = "start";
-      args = [filePath];
-      break;
-    default:
-      command = "xdg-open";
-      args = [filePath];
-      break;
+  if (Bun.env.BROWSER) {
+    command = Bun.env.BROWSER;
+    args = [filePath];
+  } else {
+    switch (platform) {
+      case "darwin":
+        command = "open";
+        args = [filePath];
+        break;
+      case "win32":
+        command = "start";
+        args = [filePath];
+        break;
+      default:
+        command = "xdg-open";
+        args = [filePath];
+        break;
+    }
   }
 
   spawn(command, args, { detached: true, stdio: "ignore" });

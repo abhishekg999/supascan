@@ -55,15 +55,11 @@ function toggleApiKey() {
 
 async function saveReport() {
     try {
-        // Generate filename with timestamp and domain
         const domain = '${domain}';
-        const timestamp = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        const timestamp = new Date().toISOString().split('T')[0];
         const filename = \`supabase-analysis-\${domain}-\${timestamp}.html\`;
-        
-        // Get the current HTML content
         const htmlContent = document.documentElement.outerHTML;
         
-        // Check if File System Access API is supported
         if ('showSaveFilePicker' in window) {
             const fileHandle = await window.showSaveFilePicker({
                 suggestedName: filename,
@@ -78,11 +74,8 @@ async function saveReport() {
             const writable = await fileHandle.createWritable();
             await writable.write(htmlContent);
             await writable.close();
-            
-            // Show success message
             showNotification('Report saved successfully!', 'success');
         } else {
-            // Fallback for browsers that don't support File System Access API
             const blob = new Blob([htmlContent], { type: 'text/html' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -96,17 +89,13 @@ async function saveReport() {
             showNotification('Report downloaded successfully!', 'success');
         }
     } catch (error) {
-        if (error.name === 'AbortError') {
-            // User cancelled the save dialog
-            return;
-        }
+        if (error.name === 'AbortError') return;
         console.error('Error saving report:', error);
         showNotification('Failed to save report: ' + error.message, 'error');
     }
 }
 
 function showNotification(message, type = 'info') {
-    // Create notification element
     const notification = document.createElement('div');
     notification.className = \`fixed top-4 right-4 px-4 py-3 rounded-lg shadow-lg z-50 font-mono text-sm transition-all duration-300 transform translate-x-full\`;
     
@@ -121,17 +110,10 @@ function showNotification(message, type = 'info') {
     notification.textContent = message;
     document.body.appendChild(notification);
     
-    // Animate in
-    setTimeout(() => {
-        notification.classList.remove('translate-x-full');
-    }, 100);
-    
-    // Remove after 3 seconds
+    setTimeout(() => notification.classList.remove('translate-x-full'), 100);
     setTimeout(() => {
         notification.classList.add('translate-x-full');
-        setTimeout(() => {
-            document.body.removeChild(notification);
-        }, 300);
+        setTimeout(() => document.body.removeChild(notification), 300);
     }, 3000);
 }
 
@@ -142,17 +124,12 @@ function escapeHtml(text) {
 }
 
 function renderSmartTable(data) {
-    console.log('renderSmartTable called with data:', data);
-    
     if (!data || data.length === 0) {
-        console.log('No data to render');
         return '<div class="p-8 text-center text-gray-400 text-sm font-mono">No data</div>';
     }
     
     const columns = Object.keys(data[0]);
     const maxRows = Math.min(data.length, 100);
-    
-    console.log(\`Rendering table with \${columns.length} columns and \${maxRows} rows\`);
     
     let html = \`
         <div class="overflow-x-auto scrollbar-thin">
@@ -206,7 +183,6 @@ function renderSmartTable(data) {
         html += \`<div class="px-3 py-2 text-xs text-slate-500 bg-slate-50 border-t border-slate-200 font-mono">Showing \${maxRows} of \${data.length} rows</div>\`;
     }
     
-    console.log('Table HTML generated successfully');
     return html;
 }
 
@@ -214,7 +190,6 @@ function executeQuery(uniqueId) {
     const operation = document.getElementById(\`query-operation-\${uniqueId}\`).value;
     const resultsDiv = document.getElementById(\`query-results-\${uniqueId}\`);
     
-    // Better loading feedback
     resultsDiv.innerHTML = \`
         <div class="p-8 text-center">
             <div class="inline-flex items-center gap-3 text-slate-600 font-mono text-sm">
@@ -281,23 +256,16 @@ function executeQuery(uniqueId) {
         }
         
         query.then(({ data, error }) => {
-            console.log('Query result:', { data, error });
-            
             if (error) {
-                console.error('Query error:', error);
                 resultsDiv.innerHTML = \`<div class="p-4 text-red-600 text-sm font-mono bg-red-50 border border-red-200 rounded">Error: \${error.message}</div>\`;
             } else {
-                console.log('Query successful, data length:', data ? data.length : 0);
                 if (data && data.length > 0) {
-                    console.log('Calling renderSmartTable with data:', data);
                     resultsDiv.innerHTML = renderSmartTable(data);
                 } else {
-                    console.log('No data returned');
                     resultsDiv.innerHTML = '<div class="p-8 text-center text-gray-400 text-sm font-mono">No data returned</div>';
                 }
             }
         }).catch((err) => {
-            console.error('Query execution error:', err);
             resultsDiv.innerHTML = \`<div class="p-4 text-red-600 text-sm font-mono bg-red-50 border border-red-200 rounded">Execution error: \${err.message}</div>\`;
         });
         
@@ -309,7 +277,6 @@ function executeQuery(uniqueId) {
             function executeRPC(rpcName, uniqueId, schema) {
                 const resultsDiv = document.getElementById(\`rpc-results-\${uniqueId}\`);
                 
-                // Loading feedback
                 resultsDiv.innerHTML = \`
                     <div class="p-8 text-center">
                         <div class="inline-flex items-center gap-3 text-slate-600 font-mono text-sm">
@@ -320,7 +287,6 @@ function executeQuery(uniqueId) {
                 \`;
                 
                 try {
-                    // Collect parameters from form inputs
                     const params = {};
                     const paramInputs = document.querySelectorAll(\`[id^="rpc-param-"][id$="-\${uniqueId}"]\`);
                     
@@ -329,41 +295,29 @@ function executeQuery(uniqueId) {
                         const value = input.value.trim();
                         
                         if (value !== '') {
-                            // Try to parse as JSON for complex types, otherwise use as string
                             try {
                                 params[paramName] = JSON.parse(value);
                             } catch {
-                                // If JSON parsing fails, use the raw value
                                 params[paramName] = value;
                             }
                         }
                     });
                     
-                    console.log('Executing RPC:', rpcName, 'in schema:', schema, 'with params:', params);
-                    
                     const cleanRpcName = rpcName.startsWith('rpc/') ? rpcName.slice(4) : rpcName;
-                    console.log('Clean RPC name:', cleanRpcName);
-                    
                     const rpcCall = supabase.schema(schema).rpc(cleanRpcName, params);
                     
                     rpcCall.then(({ data, error }) => {
-                        console.log('RPC result:', { data, error });
-                        
                         if (error) {
-                            console.error('RPC error:', error);
                             resultsDiv.innerHTML = \`<div class="p-4 text-red-600 text-sm font-mono bg-red-50 border border-red-200 rounded">Error: \${error.message}</div>\`;
                         } else {
-                            console.log('RPC successful, data:', data);
                             if (data !== null && data !== undefined) {
                                 if (Array.isArray(data)) {
-                                    // If it's an array, render as table
                                     if (data.length > 0) {
                                         resultsDiv.innerHTML = renderSmartTable(data);
                                     } else {
                                         resultsDiv.innerHTML = '<div class="p-8 text-center text-gray-400 text-sm font-mono">RPC returned empty array</div>';
                                     }
                                 } else {
-                                    // If it's a single value, display it nicely
                                     resultsDiv.innerHTML = \`
                                         <div class="p-6">
                                             <div class="bg-slate-50 border border-slate-200 rounded-lg p-4">
@@ -378,7 +332,6 @@ function executeQuery(uniqueId) {
                             }
                         }
                     }).catch((err) => {
-                        console.error('RPC execution error:', err);
                         resultsDiv.innerHTML = \`<div class="p-4 text-red-600 text-sm font-mono bg-red-50 border border-red-200 rounded">Execution error: \${err.message}</div>\`;
                     });
                     
@@ -386,16 +339,12 @@ function executeQuery(uniqueId) {
                     resultsDiv.innerHTML = \`<div class="text-red-600">Error: \${err.message}</div>\`;
                 }
             }
-            
-            // Show/hide query type sections
+
 document.addEventListener('DOMContentLoaded', function() {
-    // Add event listeners to all operation selects
     document.querySelectorAll('[id^="query-operation-"]').forEach(select => {
         select.addEventListener('change', function() {
             const uniqueId = this.id.replace('query-operation-', '');
-            // Hide all query types for this specific interface
             document.querySelectorAll(\`[id$="-\${uniqueId}"].query-type\`).forEach(el => el.classList.add('hidden'));
-            // Show the selected query type
             const targetId = this.value + '-query-' + uniqueId;
             const target = document.getElementById(targetId);
             if (target) target.classList.remove('hidden');
@@ -509,12 +458,15 @@ function APICredentialsDisplay({ url, key }: { url: string; key: string }) {
           URL: {url}
         </div>
         <div class="flex items-center gap-1">
-          <span>
-            Key: <span id="api-key-display">{key.substring(0, 20)}...</span>
+          <span class="flex-1 min-w-0">
+            Key:{" "}
+            <span id="api-key-display" class="break-all">
+              {key.substring(0, 20)}...
+            </span>
           </span>
           <button
             id="api-key-toggle"
-            class="px-1 py-0.5 text-xs bg-blue-100 text-blue-800 rounded hover:bg-blue-200 transition-colors"
+            class="px-1 py-0.5 text-xs bg-blue-100 text-blue-800 rounded hover:bg-blue-200 transition-colors whitespace-nowrap flex-shrink-0"
             onclick="toggleApiKey()"
           >
             Show Full Key
@@ -1074,7 +1026,7 @@ export abstract class HtmlRendererService {
             name="viewport"
             content="width=device-width, initial-scale=1.0"
           />
-          <title>Supabase Database Analysis Report</title>
+          <title>{result.summary.domain} - Security Analysis</title>
           <script src="https://cdn.tailwindcss.com"></script>
           <script type="module">
             {ClientScript({ url, key, domain: result.summary.domain })}
@@ -1161,12 +1113,11 @@ export abstract class HtmlRendererService {
         </head>
         <body class="bg-slate-50 min-h-screen scrollbar-thin m-0 p-0">
           <div class="w-full min-h-screen px-6 py-6">
-            {/* Header */}
             <header class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6 fade-in">
               <div class="flex items-center justify-between">
                 <div class="flex-1">
                   <h1 class="text-2xl font-bold text-slate-900 mb-1 font-mono">
-                    Supabase Database Analysis
+                    {result.summary.domain}
                   </h1>
                   <p class="text-slate-600 font-mono text-sm">
                     Generated on {new Date().toLocaleString()}
@@ -1204,7 +1155,6 @@ export abstract class HtmlRendererService {
               </div>
             </header>
 
-            {/* Target Summary */}
             {TargetSummary({
               domain: result.summary.domain,
               url,
@@ -1213,7 +1163,6 @@ export abstract class HtmlRendererService {
               jwtInfo: result.summary.jwtInfo,
             })}
 
-            {/* Database Analysis */}
             <section class="space-y-8">
               <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
                 <svg
@@ -1234,9 +1183,19 @@ export abstract class HtmlRendererService {
               )}
             </section>
 
-            {/* Footer */}
             <footer class="mt-12 text-center text-slate-500 text-sm font-mono">
-              <p>Generated by supascan - Security analysis tool for Supabase</p>
+              <p>
+                Generated by{" "}
+                <a
+                  href="https://github.com/abhishekg999/supascan"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-supabase-green hover:text-emerald-600 transition-colors underline"
+                >
+                  supascan
+                </a>{" "}
+                - Security analysis tool for Supabase
+              </p>
             </footer>
           </div>
         </body>
