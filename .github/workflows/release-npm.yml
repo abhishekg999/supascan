@@ -8,20 +8,15 @@ jobs:
   tests:
     uses: ./.github/workflows/tests.yml
 
-  release:
+  publish:
     needs: tests
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
       id-token: write
-    outputs:
-      exists: ${{ steps.tag-check.outputs.exists }}
-      version: ${{ steps.pkg.outputs.version }}
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - uses: oven-sh/setup-bun@v2
         with:
@@ -34,43 +29,17 @@ jobs:
         id: pkg
         run: echo "version=$(bun -e "console.log(require('./package.json').version)")" >> $GITHUB_OUTPUT
 
-      - name: Check if tag exists
-        id: tag-check
+      - name: Check if version exists on npm
+        id: npm-check
         run: |
-          if git rev-parse "v${{ steps.pkg.outputs.version }}" >/dev/null 2>&1; then
+          if npm view supascan@${{ steps.pkg.outputs.version }} version 2>/dev/null; then
             echo "exists=true" >> $GITHUB_OUTPUT
           else
             echo "exists=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Create and push tag
-        if: steps.tag-check.outputs.exists == 'false'
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git tag v${{ steps.pkg.outputs.version }}
-          git push origin v${{ steps.pkg.outputs.version }}
-
-  publish:
-    needs: release
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      id-token: write
-
-    if: needs.release.outputs.exists == 'false'
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: ".bun-version"
-
-      - run: bun install --frozen-lockfile
-      - run: bun run build:bundle
-
       - name: Publish to npm
+        if: steps.npm-check.outputs.exists == 'false'
         run: bun publish --access public
         env:
           NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
