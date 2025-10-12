@@ -1,145 +1,88 @@
 # supascan
 
-A security analysis CLI tool for Supabase databases that helps identify exposed data, analyze schemas, and test RPC functions.
+[![.github/workflows/tests.yml](https://github.com/abhishekg999/supascan/actions/workflows/tests.yml/badge.svg)](https://github.com/abhishekg999/supascan/actions/workflows/tests.yml) [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/abhishekg999/supascan/master/LICENCE)
+
+**supascan** is an automated security scanner for Supabase databases. It detects exposed data, analyzes Row Level Security (RLS) policies, tests RPC functions, and generates comprehensive security reports.
+
+## Features
+
+- Automated schema and table discovery
+- RLS policy effectiveness testing
+- Exposed data detection with row count estimation
+- RPC function parameter analysis and testing
+- JWT token decoding and validation
+- Multiple output formats (Console, JSON, HTML)
+- Interactive HTML reports with live query interface
+- Credential extraction from JavaScript files (experimental)
 
 ## Installation
+
+**NPM:**
+
+```bash
+npm install -g supascan
+```
+
+**Bun:**
 
 ```bash
 bun install -g supascan
 ```
 
+**From source:**
+
+```bash
+git clone https://github.com/abhishekg999/supascan.git
+cd supascan
+bun install
+bun run build
+```
+
 ## Usage
 
-### Basic Analysis
-
-Analyze your Supabase database for security issues:
+To get basic options and usage:
 
 ```bash
-supascan --url https://your-project.supabase.co --key your-anon-key
+supascan --help
 ```
 
-### Available Commands
-
-#### Database Analysis
+### Quick Start
 
 ```bash
-# Analyze all schemas
-supascan --url <url> --key <key>
-
-# Analyze specific schema
-supascan --url <url> --key <key> --schema public
+# Basic security scan
+supascan --url https://your-project.supabase.co --key your-anon-key
 
 # Generate HTML report
-supascan --url <url> --key <key> --html
+supascan --url https://your-project.supabase.co --key your-anon-key --html
 
-# JSON output
-supascan --url <url> --key <key> --json
-```
+# Analyze specific schema
+supascan --url https://your-project.supabase.co --key your-anon-key --schema public
 
-#### Data Dumping
-
-```bash
 # Dump table data
-supascan --url <url> --key <key> --dump public.users --limit 100
+supascan --url https://your-project.supabase.co --key your-anon-key --dump public.users --limit 100
 
-# Dump Swagger JSON for schema
-supascan --url <url> --key <key> --dump public
+# Test RPC function
+supascan --url https://your-project.supabase.co --key your-anon-key --rpc public.my_function --args '{"param": "value"}'
 ```
 
-#### RPC Testing
+## What supascan Detects
 
-```bash
-# Get RPC help
-supascan --url <url> --key <key> --rpc public.get_user_stats
-
-# Call RPC with parameters
-supascan --url <url> --key <key> --rpc public.get_user_stats --args '{"user_id": "123"}'
-
-# Show query execution plan
-supascan --url <url> --key <key> --rpc public.get_user_stats --args '{"user_id": "123"}' --explain
-```
-
-#### Credential Extraction (Experimental)
-
-```bash
-# Extract credentials from JS file
-supascan --extract https://example.com/app.js --url <url> --key <key>
-```
-
-## Options
-
-| Option                             | Description                                                      |
-| ---------------------------------- | ---------------------------------------------------------------- |
-| `-u, --url <url>`                  | Supabase URL                                                     |
-| `-k, --key <key>`                  | Supabase anon key                                                |
-| `-s, --schema <schema>`            | Schema to analyze (default: all schemas)                         |
-| `-x, --extract <url>`              | Extract credentials from JS file URL (experimental)              |
-| `--dump <schema.table\|schema>`    | Dump data from specific table or swagger JSON from schema        |
-| `--limit <number>`                 | Limit rows for dump or RPC results (default: 10)                 |
-| `--rpc <schema.rpc_name>`          | Call an RPC function (read-only operations only)                 |
-| `--args <json>`                    | JSON arguments for RPC call (use $VAR for environment variables) |
-| `--json`                           | Output as JSON                                                   |
-| `--html`                           | Generate HTML report                                             |
-| `-d, --debug`                      | Enable debug mode                                                |
-| `--explain`                        | Show query execution plan                                        |
-| `--suppress-experimental-warnings` | Suppress experimental warnings                                   |
-
-## What supascan Analyzes
-
-### Database Security Assessment
-
-- **Schema Discovery**: Automatically discovers all available schemas
-- **Table Access Analysis**: Identifies which tables are:
-  - ✅ **Readable** - Data is exposed and accessible
-  - ⚠️ **Empty/Protected** - No data or protected by RLS
-  - ❌ **Denied** - Access is explicitly denied
-
-### JWT Token Analysis
-
-- Parses and displays JWT token information
-- Shows issuer, audience, expiration, and role information
-
-### RPC Function Analysis
-
-- Lists all available RPC functions
-- Shows parameter requirements and types
-- Validates parameters before execution
-
-### Output Formats
-
-- **Console**: Colorized terminal output with detailed analysis
-- **JSON**: Machine-readable output for scripting
-- **HTML**: Visual report that opens in your browser
-
-## Examples
-
-### Security Analysis Report
-
-```bash
-supascan --url https://abc123.supabase.co --key eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9... --html
-```
-
-### Check Specific Table Access
-
-```bash
-supascan --url https://abc123.supabase.co --key eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9... --dump public.users --limit 5
-```
-
-### Test RPC Function
-
-```bash
-supascan --url https://abc123.supabase.co --key eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9... --rpc public.get_user_count --args '{"active": true}'
-```
+- **Exposed Tables**: Tables readable without authentication or with weak RLS
+- **Data Leakage**: Estimated row counts for accessible tables
+- **RPC Vulnerabilities**: Publicly callable functions and their parameters
+- **JWT Issues**: Token expiration, role assignments, and claims
+- **Schema Information**: Complete database structure visibility
 
 ## Security Considerations
 
-⚠️ **Important**: This tool is designed for security analysis and testing. Only use it on:
+⚠️ **Important**: This tool is for authorized security testing only.
 
-- Your own databases
-- Databases you have explicit permission to test
-- Staging/development environments
+- Only scan databases you own or have explicit permission to test
+- Use on staging/development environments when possible
+- Never use on production databases without proper authorization
+- Be aware that scanning may trigger rate limits or monitoring alerts
 
-Never use this tool on production databases without proper authorization.
+Unauthorized database scanning may be illegal in your jurisdiction.
 
 ## Development
 
@@ -150,12 +93,19 @@ bun install
 # Run locally
 bun run start
 
-# Build
-bun run build
-
-# Test
+# Run tests
 bun test
 
-# Lint
-bun run lint
+# Build
+bun run build
 ```
+
+## License
+
+supascan is distributed under the [MIT License](LICENCE).
+
+## Links
+
+- **Homepage**: https://github.com/abhishekg999/supascan
+- **Issues**: https://github.com/abhishekg999/supascan/issues
+- **NPM**: https://www.npmjs.com/package/supascan
