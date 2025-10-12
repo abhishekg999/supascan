@@ -631,12 +631,12 @@ function TableRow({
   switch (access?.status) {
     case "readable":
       statusClass = "bg-green-100 text-green-800 border-green-200";
-      statusText = "Data exposed";
+      statusText = `~${access.rowCount ?? "?"} rows exposed`;
       statusIcon = "[+]";
       break;
     case "empty":
       statusClass = "bg-yellow-100 text-yellow-800 border-yellow-200";
-      statusText = "Empty or RLS protected";
+      statusText = "0 rows - empty or RLS";
       statusIcon = "[-]";
       break;
     case "denied":
