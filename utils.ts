@@ -72,13 +72,13 @@ export const parseRPCArgs = (argsString: string): Record<string, any> => {
           throw new Error(`Environment variable ${varName} not found`);
         }
         return JSON.stringify(envValue);
-      }
+      },
     );
 
     return JSON.parse(processedString);
   } catch (error) {
     throw new Error(
-      `Failed to parse RPC arguments: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to parse RPC arguments: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
 };
@@ -92,7 +92,7 @@ export const setExperimentalWarnings = (suppress: boolean) => {
 export const experimentalWarning = onlyOnce(() => {
   if (!suppressExperimentalWarnings) {
     log.warn(
-      "This feature is experimental and may have bugs. You can suppress this with --suppress-experimental-warnings."
+      "This feature is experimental and may have bugs. You can suppress this with --suppress-experimental-warnings.",
     );
   }
 });

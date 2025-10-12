@@ -37,7 +37,7 @@ export type RPCFunction = {
 export abstract class SupabaseService {
   public static async getSchemas(
     ctx: CLIContext,
-    nonexistantSchema = "NONEXISTANT_SCHEMA_THAT_SHOULDNT_EXIST"
+    nonexistantSchema = "NONEXISTANT_SCHEMA_THAT_SHOULDNT_EXIST",
   ): Promise<Result<string[]>> {
     log.debug(ctx, "Fetching schemas...");
 
@@ -62,7 +62,7 @@ export abstract class SupabaseService {
 
   public static async getSwagger(
     ctx: CLIContext,
-    schema: string
+    schema: string,
   ): Promise<Result<SupabaseSwagger>> {
     log.debug(ctx, `Fetching swagger for schema: ${schema}`);
 
@@ -77,7 +77,7 @@ export abstract class SupabaseService {
 
   public static async getTables(
     ctx: CLIContext,
-    schema: string
+    schema: string,
   ): Promise<Result<string[]>> {
     log.debug(ctx, `Fetching tables for schema: ${schema}`);
 
@@ -98,7 +98,7 @@ export abstract class SupabaseService {
 
   public static async getRPCs(
     ctx: CLIContext,
-    schema: string
+    schema: string,
   ): Promise<Result<string[]>> {
     log.debug(ctx, `Fetching RPCs for schema: ${schema}`);
 
@@ -118,7 +118,7 @@ export abstract class SupabaseService {
 
   public static async getRPCsWithParameters(
     ctx: CLIContext,
-    schema: string
+    schema: string,
   ): Promise<Result<RPCFunction[]>> {
     log.debug(ctx, `Fetching RPCs with parameters for schema: ${schema}`);
 
@@ -156,7 +156,7 @@ export abstract class SupabaseService {
                       required: requiredParams.includes(paramName),
                       description: paramDef.description,
                     });
-                  }
+                  },
                 );
               }
             });
@@ -167,7 +167,7 @@ export abstract class SupabaseService {
             });
           }
         }
-      }
+      },
     );
 
     log.debug(ctx, `Found ${rpcFunctions.length} RPCs with parameters`);
@@ -186,7 +186,7 @@ export abstract class SupabaseService {
     } = {
       get: false,
       explain: false,
-    }
+    },
   ): Promise<Result<any>> {
     log.debug(ctx, `Calling RPC: ${schema}.${rpcName}`, args);
 
@@ -217,8 +217,8 @@ export abstract class SupabaseService {
       log.debug(ctx, "RPC exception:", error);
       return err(
         new Error(
-          `RPC call exception: ${error instanceof Error ? error.message : String(error)}`
-        )
+          `RPC call exception: ${error instanceof Error ? error.message : String(error)}`,
+        ),
       );
     }
   }
@@ -226,7 +226,7 @@ export abstract class SupabaseService {
   public static async testTableRead(
     ctx: CLIContext,
     schema: string,
-    table: string
+    table: string,
   ): Promise<Result<TableAccessResult>> {
     log.debug(ctx, `Testing read access for ${schema}.${table}`);
 
@@ -251,7 +251,7 @@ export abstract class SupabaseService {
 
       log.debug(
         ctx,
-        `Table ${table} is readable with ~${count ?? "unknown"} rows (EXPOSED)`
+        `Table ${table} is readable with ~${count ?? "unknown"} rows (EXPOSED)`,
       );
       return ok({
         status: "readable",
@@ -273,7 +273,7 @@ export abstract class SupabaseService {
   public static async testTablesRead(
     ctx: CLIContext,
     schema: string,
-    tables: string[]
+    tables: string[],
   ): Promise<Result<Record<string, TableAccessResult>>> {
     log.debug(ctx, `Testing read access for ${tables.length} tables`);
 
@@ -286,7 +286,7 @@ export abstract class SupabaseService {
             ? result.value
             : { status: "denied" as const, accessible: false, hasData: false },
         };
-      })
+      }),
     );
 
     const accessMap = results.reduce(
@@ -294,7 +294,7 @@ export abstract class SupabaseService {
         acc[table] = access;
         return acc;
       },
-      {} as Record<string, TableAccessResult>
+      {} as Record<string, TableAccessResult>,
     );
 
     return ok(accessMap);
@@ -304,7 +304,7 @@ export abstract class SupabaseService {
     ctx: CLIContext,
     schema: string,
     table: string,
-    limit = 10
+    limit = 10,
   ): Promise<
     Result<{
       columns: string[];
