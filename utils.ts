@@ -111,8 +111,8 @@ export const openInBrowser = (filePath: string): void => {
   let command: string;
   let args: string[];
 
-  if (Bun.env.BROWSER) {
-    command = Bun.env.BROWSER;
+  if (process.env.BROWSER) {
+    command = process.env.BROWSER;
     args = [filePath];
   } else {
     switch (platform) {
