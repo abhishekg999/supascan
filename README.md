@@ -17,16 +17,16 @@
 
 ## Installation
 
-**NPM:**
-
-```bash
-npm install -g supascan
-```
-
 **Bun:**
 
 ```bash
 bun install -g supascan
+```
+
+**NPM (not yet):**
+
+```bash
+npm install -g supascan
 ```
 
 **From source:**

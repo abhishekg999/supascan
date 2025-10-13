@@ -21,9 +21,10 @@ export function useRPC(
       setState({ status: "loading" });
 
       try {
+        const actualRpcName = rpcName.replace(/^rpc\//, "");
         const { data, error } = await client
           .schema(schema)
-          .rpc(rpcName, params);
+          .rpc(actualRpcName, params);
 
         if (error) {
           throw new Error(error.message);
