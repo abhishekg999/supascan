@@ -32,7 +32,7 @@ export async function executeAnalyzeCommand(
   if (ctx.json) {
     console.log(JSON.stringify(analysisResult.value, null, 2));
   } else if (ctx.html) {
-    const { buildHtmlReport } = await import("../report-builder.tsx");
+    const { buildHtmlReport } = await import("../../report-builder.tsx");
     const htmlContent = await buildHtmlReport(
       analysisResult.value,
       ctx.url,

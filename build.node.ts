@@ -3,58 +3,46 @@ import { mkdir } from "fs/promises";
 
 console.log("Building Node.js bundle...");
 
-console.log("Step 1: Type checking...");
-await $`bun run lint`;
-
-console.log("Step 2: Pre-bundling React report app...");
-await mkdir("./dist", { recursive: true });
+await $`tsc --noEmit`;
 
 const reportBundle = await Bun.build({
   entrypoints: ["./src/report/index.html"],
   minify: true,
   target: "browser",
-  naming: "[dir]/[name].[ext]",
   splitting: false,
-  define: {
-    "process.env.NODE_ENV": '"production"',
-  },
+  define: { "process.env.NODE_ENV": '"production"' },
 });
 
 if (!reportBundle.success) {
-  console.error("Failed to bundle report:");
-  for (const log of reportBundle.logs) {
-    console.error(log);
-  }
+  console.error("Failed to bundle report");
+  for (const log of reportBundle.logs) console.error(log);
   process.exit(1);
 }
 
 const htmlOutput = reportBundle.outputs.find((o) => o.path.endsWith(".html"));
-if (!htmlOutput) {
-  console.error("No HTML output generated");
-  process.exit(1);
-}
+if (!htmlOutput) throw new Error("No HTML output");
 
 const jsMap = new Map<string, string>();
 for (const output of reportBundle.outputs) {
   if (output.path.endsWith(".js")) {
     const filename = output.path.split("/").pop();
     if (filename) {
-      const content = await output.text();
-      jsMap.set(filename, content.replace(/<\/script>/g, "<\\/script>"));
+      jsMap.set(
+        filename,
+        (await output.text()).replace(/<\/script>/g, "<\\/script>"),
+      );
     }
   }
 }
 
 let html = await htmlOutput.text();
 
-const rewriter = new HTMLRewriter()
+html = new HTMLRewriter()
   .on("script[src]", {
     element(element) {
       const src = element.getAttribute("src");
-      if (src && src.startsWith("./")) {
-        const filename = src.replace("./", "");
-        const content = jsMap.get(filename);
-
+      if (src?.startsWith("./")) {
+        const content = jsMap.get(src.replace("./", ""));
         if (content) {
           element.removeAttribute("src");
           element.removeAttribute("crossorigin");
@@ -65,39 +53,35 @@ const rewriter = new HTMLRewriter()
   })
   .on("head", {
     element(element) {
-      const polyfillScript = `
-  <script>
-    window.global = window.global || window;
-    window.process = window.process || { env: { NODE_ENV: 'production' } };
-    window.__REPORT_DATA__ = __REPORT_DATA_PLACEHOLDER__;
-  </script>`;
-      element.prepend(polyfillScript, { html: true });
+      element.prepend(
+        `<script>window.global=window.global||window;window.process=window.process||{env:{NODE_ENV:'production'}};window.__REPORT_DATA__=__REPORT_DATA_PLACEHOLDER__;</script>`,
+        { html: true },
+      );
     },
-  });
+  })
+  .transform(html);
 
-html = rewriter.transform(html);
+await Bun.write(
+  "./src/embedded-report.ts",
+  `export const reportTemplate = ${JSON.stringify(html)};`,
+);
 
-await Bun.write("./dist/report-template.html", html);
-console.log("✓ Report template built: dist/report-template.html");
+await mkdir("./dist", { recursive: true });
 
-console.log("Step 3: Bundling CLI for Node.js...");
 const nodeBuild = await Bun.build({
   entrypoints: ["./src/cli/index.ts"],
   outdir: "./dist",
   minify: true,
   target: "node",
-  naming: "[name].js",
-  define: {
-    "process.env.NODE_ENV": '"production"',
+  naming: {
+    entry: "supascan.js",
   },
 });
 
 if (!nodeBuild.success) {
-  console.error("Failed to bundle for Node.js:");
-  for (const log of nodeBuild.logs) {
-    console.error(log);
-  }
+  console.error("Failed to bundle for Node.js");
+  for (const log of nodeBuild.logs) console.error(log);
   process.exit(1);
 }
 
-console.log("✓ Node.js bundle built successfully: dist/supascan.js");
+console.log("✓ Node.js bundle built: dist/supascan.js");
