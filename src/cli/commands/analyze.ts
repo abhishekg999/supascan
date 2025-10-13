@@ -1,36 +1,48 @@
 import pc from "picocolors";
+import { analyze } from "../../core/analyzer";
+import type { AnalysisResult } from "../../core/analyzer.types";
 import type { CLIContext } from "../context";
-import {
-  AnalyzerService,
-  type AnalysisResult,
-} from "../services/analyzer.service";
-import { HtmlRendererService } from "../services/html-renderer.service";
-import {
-  generateTempFilePath,
-  log,
-  openInBrowser,
-  writeHtmlFile,
-} from "../utils";
+import { log } from "../formatters/console";
+import { handleEvent } from "../formatters/events";
 
 export async function executeAnalyzeCommand(
   ctx: CLIContext,
   options: { schema?: string },
 ): Promise<void> {
-  const analysisResult = await AnalyzerService.analyze(ctx, options.schema);
+  const analysisGen = analyze(ctx.client, ctx.url, ctx.key, options);
+  let analysisResult;
 
-  if (!analysisResult.success) {
-    log.error("Analysis failed", analysisResult.error.message);
+  while (true) {
+    const next = await analysisGen.next();
+    if (next.done) {
+      analysisResult = next.value;
+      break;
+    }
+    handleEvent(ctx, next.value);
+  }
+
+  if (!analysisResult || !analysisResult.success) {
+    log.error(
+      "Analysis failed",
+      analysisResult?.error.message ?? "Unknown error",
+    );
     process.exit(1);
   }
 
   if (ctx.json) {
     console.log(JSON.stringify(analysisResult.value, null, 2));
   } else if (ctx.html) {
-    const htmlContent = HtmlRendererService.generateHtmlReport(
+    const { buildHtmlReport } = await import("../report-builder.tsx");
+    const htmlContent = await buildHtmlReport(
       analysisResult.value,
       ctx.url,
       ctx.key,
     );
+    const { generateTempFilePath, writeHtmlFile } = await import(
+      "../utils/files"
+    );
+    const { openInBrowser } = await import("../utils/browser");
+
     const filePath = generateTempFilePath();
     writeHtmlFile(filePath, htmlContent);
     openInBrowser(filePath);

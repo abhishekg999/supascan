@@ -1,10 +1,14 @@
 import { Command } from "@commander-js/extra-typings";
-import { executeAnalyzeCommand } from "./commands/analyze.command";
-import { executeDumpCommand } from "./commands/dump.command";
-import { executeRPCCommand } from "./commands/rpc.command";
+import { VERSION } from "../../version";
+import { executeAnalyzeCommand } from "./commands/analyze";
+import { executeDumpCommand } from "./commands/dump";
+import { executeRPCCommand } from "./commands/rpc";
 import { createCLIContext } from "./context";
-import { experimentalWarning, log, setExperimentalWarnings } from "./utils";
-import { VERSION } from "./version";
+import {
+  experimentalWarning,
+  log,
+  setExperimentalWarnings,
+} from "./formatters/console";
 
 const program = new Command();
 
@@ -53,10 +57,6 @@ program
       }
 
       const ctx = await createCLIContext(options);
-
-      if (ctx.debug) {
-        log.debug(ctx, "CLI Options", options);
-      }
 
       if (options.rpc) {
         await executeRPCCommand(ctx, {
