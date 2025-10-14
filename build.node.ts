@@ -73,6 +73,7 @@ const nodeBuild = await Bun.build({
   outdir: "./dist",
   minify: true,
   target: "node",
+  banner: "#!/usr/bin/env node",
   naming: {
     entry: "supascan.js",
   },
