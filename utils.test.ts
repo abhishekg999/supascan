@@ -1,11 +1,10 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
+import { err, ok } from "./src/core/result.types";
 import {
-  err,
   experimentalWarning,
-  ok,
-  parseRPCArgs,
   setExperimentalWarnings,
-} from "./utils";
+} from "./src/cli/formatters/console";
+import { parseRPCArgs } from "./src/cli/utils/args";
 
 describe("Result types", () => {
   test("ok returns success result with value", () => {

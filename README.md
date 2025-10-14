@@ -17,16 +17,20 @@
 
 ## Installation
 
-**NPM:**
+**Note:**
 
-```bash
-npm install -g supascan
-```
+- Primarily tested with [Bun](https://bun.sh) runtime (Node.js support is experimental)
 
 **Bun:**
 
 ```bash
 bun install -g supascan
+```
+
+**NPM:**
+
+```bash
+npm install -g supascan
 ```
 
 **From source:**

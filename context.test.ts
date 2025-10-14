@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
-import { createCLIContext } from "./context";
+import { createCLIContext } from "./src/cli/context";
 
 describe("createCLIContext", () => {
   beforeEach(() => {
@@ -28,10 +28,7 @@ describe("createCLIContext", () => {
       ok: true,
       text: () =>
         Promise.resolve(`
-        const supabase = createBrowserClient)(
-          "https://extracted.supabase.co",
-          "extracted_key"
-        );
+        const supabase = createBrowserClient)("https://extracted.supabase.co", "extracted_key");
       `),
       headers: {
         get: () => "application/javascript",
