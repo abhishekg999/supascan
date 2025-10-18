@@ -18,3 +18,29 @@ export const parseRPCArgs = (argsString: string): Record<string, any> => {
     );
   }
 };
+
+export const parseHeaders = (headers: string[]): Record<string, string> => {
+  const parsedHeaders: Record<string, string> = {};
+
+  for (const header of headers) {
+    const colonIndex = header.indexOf(":");
+    if (colonIndex === -1) {
+      throw new Error(
+        `Invalid header format: "${header}". Expected format: "Header-Name: value"`,
+      );
+    }
+
+    const name = header.slice(0, colonIndex).trim();
+    const value = header.slice(colonIndex + 1).trim();
+
+    if (!name) {
+      throw new Error(
+        `Invalid header format: "${header}". Header name cannot be empty`,
+      );
+    }
+
+    parsedHeaders[name] = value;
+  }
+
+  return parsedHeaders;
+};

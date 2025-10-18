@@ -37,6 +37,7 @@ export async function executeAnalyzeCommand(
       analysisResult.value,
       ctx.url,
       ctx.key,
+      ctx.headers,
     );
     const { generateTempFilePath, writeHtmlFile } = await import(
       "../utils/files"

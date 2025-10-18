@@ -1,10 +1,11 @@
-import type { AnalysisResult } from "../core/analyzer.types";
 import type { SupabaseClient as SupabaseClientType } from "@supabase/supabase-js";
+import type { AnalysisResult } from "../core/analyzer.types";
 
 export interface ReportData {
   analysis: AnalysisResult;
   url: string;
   apiKey: string;
+  headers?: Record<string, string>;
   generatedAt: string;
 }
 

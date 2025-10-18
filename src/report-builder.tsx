@@ -1,16 +1,18 @@
 import type { AnalysisResult } from "./core/analyzer.types";
-import type { ReportData } from "./report/types";
 import { reportTemplate } from "./embedded-report";
+import type { ReportData } from "./report/types";
 
 export async function buildHtmlReport(
   result: AnalysisResult,
   url: string,
   key: string,
+  headers?: Record<string, string>,
 ): Promise<string> {
   const reportData: ReportData = {
     analysis: result,
     url,
     apiKey: key,
+    headers,
     generatedAt: new Date().toISOString(),
   };
 
