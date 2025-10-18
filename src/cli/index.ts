@@ -36,6 +36,11 @@ program
     "--args <json>",
     "JSON arguments for RPC call (use $VAR for environment variables)",
   )
+  .option(
+    "-H, --header <header>",
+    "Add custom HTTP header (can be used multiple times)",
+    [],
+  )
   .option("--json", "Output as JSON")
   .option("--html", "Generate HTML report")
   .option("-d, --debug", "Enable debug mode")
@@ -56,7 +61,14 @@ program
         experimentalWarning();
       }
 
-      const ctx = await createCLIContext(options);
+      const ctx = await createCLIContext({
+        ...options,
+        header: Array.isArray(options.header)
+          ? options.header
+          : options.header
+            ? [options.header]
+            : undefined,
+      });
 
       if (options.rpc) {
         await executeRPCCommand(ctx, {

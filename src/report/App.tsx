@@ -5,8 +5,8 @@ import { useSupabase } from "./hooks/useSupabase";
 import type { ReportData } from "./types";
 
 export function App({ reportData }: { reportData: ReportData }) {
-  const { analysis, url, apiKey } = reportData;
-  const client = useSupabase(url, apiKey);
+  const { analysis, url, apiKey, headers } = reportData;
+  const client = useSupabase(url, apiKey, headers);
 
   return (
     <div className="bg-slate-50 min-h-screen">
