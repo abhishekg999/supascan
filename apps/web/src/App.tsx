@@ -27,7 +27,7 @@ export function App() {
   const { state: analysisState, execute: runAnalysis } = useAnalysis(
     client,
     url,
-    key
+    key,
   );
 
   useEffect(() => {

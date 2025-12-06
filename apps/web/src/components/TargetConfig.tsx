@@ -16,7 +16,7 @@ export function TargetConfig({ onConfigured }: TargetConfigProps) {
   const client = useSupabase(
     url,
     key,
-    Object.keys(headers).length > 0 ? headers : undefined
+    Object.keys(headers).length > 0 ? headers : undefined,
   );
 
   const handleConnect = () => {
