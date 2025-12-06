@@ -62,13 +62,8 @@ export function RPCExecutor({ client, schema, rpc }: RPCExecutorProps) {
   const result = state.status === "success" ? state.data : null;
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-      <div className="p-4 bg-gray-50 border-b border-gray-200">
-        <h3 className="text-sm font-semibold text-gray-900 font-mono">
-          Execute: {schema}.{rpc.name}
-        </h3>
-      </div>
-      <div className="p-4 space-y-3">
+    <div className="h-full flex flex-col">
+      <div className="p-4 space-y-3 border-b border-gray-200">
         {rpc.parameters.length > 0 && (
           <div className="space-y-2">
             {rpc.parameters.map((param) => (
@@ -128,13 +123,13 @@ export function RPCExecutor({ client, schema, rpc }: RPCExecutorProps) {
         </button>
       </div>
 
-      <div className="border-t border-gray-200">
+      <div className="flex-1 flex flex-col border-t border-gray-200 min-h-0">
         <div className="px-4 py-2 bg-gray-50 border-b border-gray-200">
           <h4 className="text-xs font-semibold text-gray-700 font-mono">
             Results
           </h4>
         </div>
-        <div className="min-h-[300px] max-h-[500px] overflow-auto">
+        <div className="flex-1 overflow-auto">
           {state.status === "loading" && (
             <div className="p-8 text-center">
               <div className="inline-flex items-center gap-3 text-slate-600 font-mono text-sm">

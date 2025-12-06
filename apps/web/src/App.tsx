@@ -4,22 +4,22 @@ import { TargetConfig } from "./components/TargetConfig";
 import { TargetSummary } from "./components/TargetSummary";
 import { useAnalysis } from "./hooks/useAnalysis";
 import { useSupabase } from "./hooks/useSupabase";
-import type { Credentials } from "./types";
-import { parseHashCredentials } from "./utils/hash";
+import type { SupascanConfig } from "./types";
+import { parseSupascanConfig } from "./utils/hash";
 
 export function App() {
-  const [config, setConfig] = useState<Credentials | null>(null);
+  const [config, setConfig] = useState<SupascanConfig | null>(null);
   const [url, setUrl] = useState("");
   const [key, setKey] = useState("");
   const [headers, setHeaders] = useState<Record<string, string> | undefined>();
 
   useEffect(() => {
-    const hashCreds = parseHashCredentials();
-    if (hashCreds) {
-      setConfig(hashCreds);
-      setUrl(hashCreds.url);
-      setKey(hashCreds.key);
-      setHeaders(hashCreds.headers);
+    const parsed = parseSupascanConfig();
+    if (parsed) {
+      setConfig(parsed);
+      setUrl(parsed.url);
+      setKey(parsed.key);
+      setHeaders(parsed.headers);
     }
   }, []);
 
@@ -27,14 +27,20 @@ export function App() {
   const { state: analysisState, execute: runAnalysis } = useAnalysis(
     client,
     url,
-    key,
+    key
   );
 
   useEffect(() => {
-    if (client && url && key && analysisState.status === "idle") {
+    if (
+      config?.autorun &&
+      client &&
+      url &&
+      key &&
+      analysisState.status === "idle"
+    ) {
       runAnalysis();
     }
-  }, [client, url, key, analysisState.status, runAnalysis]);
+  }, [config?.autorun, client, url, key, analysisState.status, runAnalysis]);
 
   if (!config || !url || !key) {
     return (
@@ -111,7 +117,7 @@ export function App() {
       <div className="w-full min-h-screen px-4 py-4">
         <header className="mb-4">
           <h1 className="text-2xl font-bold text-gray-900">
-            Supabase Security Analysis
+            Supascan | Supabase Security Analysis
           </h1>
         </header>
 

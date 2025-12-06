@@ -1,25 +1,20 @@
-import type { Credentials } from "../types";
+import type { SupascanConfig } from "../types";
 
 declare global {
   interface Window {
-    __CREDS__?: string;
+    __SUPASCAN_CONFIG__?: string;
   }
 }
 
-export function parseHashCredentials(): Credentials | null {
+export function parseSupascanConfig(): SupascanConfig | null {
   if (typeof window === "undefined") return null;
 
-  let encodedCreds = window.location.hash.slice(1);
-
-  if (!encodedCreds && window.__CREDS__) {
-    encodedCreds = window.__CREDS__;
-  }
-
-  if (!encodedCreds) return null;
+  const encoded = window.__SUPASCAN_CONFIG__;
+  if (!encoded) return null;
 
   try {
-    const decoded = atob(encodedCreds);
-    const parsed = JSON.parse(decoded) as Credentials;
+    const decoded = atob(encoded);
+    const parsed = JSON.parse(decoded) as SupascanConfig;
 
     if (parsed.url && parsed.key) {
       return parsed;
@@ -29,9 +24,4 @@ export function parseHashCredentials(): Credentials | null {
   } catch {
     return null;
   }
-}
-
-export function encodeCredentials(credentials: Credentials): string {
-  const json = JSON.stringify(credentials);
-  return btoa(json);
 }

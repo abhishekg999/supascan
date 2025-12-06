@@ -8,6 +8,33 @@ export async function executeAnalyzeCommand(
   ctx: CLIContext,
   options: { schema?: string }
 ): Promise<void> {
+  if (ctx.html) {
+    const { reportTemplate } = await import("../embedded-report");
+    const { generateTempFilePath, writeHtmlFile } = await import(
+      "../utils/files"
+    );
+    const { openInBrowser } = await import("../utils/browser");
+
+    const config = {
+      url: ctx.url,
+      key: ctx.key,
+      headers: ctx.headers,
+      autorun: true,
+    };
+    const encoded = Buffer.from(JSON.stringify(config)).toString("base64");
+
+    const filePath = generateTempFilePath();
+    const htmlContent = reportTemplate.replace(
+      "</head>",
+      `<script>window.__SUPASCAN_CONFIG__ = "${encoded}";</script></head>`
+    );
+    writeHtmlFile(filePath, htmlContent);
+
+    openInBrowser(filePath);
+    log.success(`HTML report generated: ${filePath}`);
+    return;
+  }
+
   const analysisGen = analyze(ctx.client, ctx.url, ctx.key, options);
   let analysisResult;
 
@@ -30,31 +57,6 @@ export async function executeAnalyzeCommand(
 
   if (ctx.json) {
     console.log(JSON.stringify(analysisResult.value, null, 2));
-  } else if (ctx.html) {
-    const { reportTemplate } = await import("../embedded-report");
-    const { generateTempFilePath, writeHtmlFile } = await import(
-      "../utils/files"
-    );
-    const { openInBrowser } = await import("../utils/browser");
-
-    const credentials = {
-      url: ctx.url,
-      key: ctx.key,
-      headers: ctx.headers,
-    };
-    const encodedCreds = Buffer.from(JSON.stringify(credentials)).toString(
-      "base64"
-    );
-
-    const filePath = generateTempFilePath();
-    const htmlContent = reportTemplate.replace(
-      "</head>",
-      `<script>window.__CREDS__ = "${encodedCreds}";</script></head>`
-    );
-    writeHtmlFile(filePath, htmlContent);
-
-    openInBrowser(filePath);
-    log.success(`HTML report generated: ${filePath}`);
   } else {
     displayAnalysisResult(analysisResult.value);
   }

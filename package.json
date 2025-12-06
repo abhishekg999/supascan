@@ -1,7 +1,6 @@
 {
   "name": "supascan",
   "version": "0.1.5",
-  "private": true,
   "description": "Automated security scanner for Supabase databases - detect exposed data, analyze RLS policies, and test RPC functions",
   "license": "MIT",
   "author": "Abhishek Govindarasu",
@@ -14,6 +13,8 @@
     "build:cli": "turbo run build --filter @supascan/cli",
     "build:web": "turbo run build --filter @supascan/web",
     "build:core": "turbo run build --filter @supascan/core",
+    "build:bundle": "bun run build:cli && cp apps/cli/dist/supascan.js dist/supascan.js && cp apps/cli/package.json dist/package.json",
+    "build:binary": "bun run build:cli && cd apps/cli && bun build --compile --minify --sourcemap src/index.ts --outfile ../../dist/supascan",
     "dev": "turbo run dev",
     "dev:web": "cd apps/web && bun run dev",
     "cli": "cd apps/cli && bun run dev",
@@ -22,8 +23,9 @@
     "lint:cli": "turbo run lint --filter @supascan/cli",
     "lint:web": "turbo run lint --filter @supascan/web",
     "test": "turbo run test",
-    "clean": "rm -rf apps/*/dist packages/*/dist node_modules/.cache .turbo",
-    "format": "prettier --write ."
+    "clean": "rm -rf apps/*/dist packages/*/dist node_modules/.cache .turbo dist",
+    "format": "prettier --write .",
+    "prepublishOnly": "bun run build:bundle"
   },
   "devDependencies": {
     "@types/bun": "latest",

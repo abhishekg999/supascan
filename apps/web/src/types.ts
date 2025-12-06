@@ -1,9 +1,10 @@
 import type { SupabaseClient as SupabaseClientType } from "@supabase/supabase-js";
 
-export interface Credentials {
+export interface SupascanConfig {
   url: string;
   key: string;
   headers?: Record<string, string>;
+  autorun: boolean;
 }
 
 export type SupabaseClient = SupabaseClientType;

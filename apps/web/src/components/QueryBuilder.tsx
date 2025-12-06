@@ -56,13 +56,8 @@ export function QueryBuilder({ client, schema, table }: QueryBuilderProps) {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-      <div className="p-4 bg-gray-50 border-b border-gray-200">
-        <h3 className="text-sm font-semibold text-gray-900 font-mono">
-          Query: {schema}.{table}
-        </h3>
-      </div>
-      <div className="p-4 space-y-3">
+    <div className="h-full flex flex-col">
+      <div className="p-4 space-y-3 border-b border-gray-200">
         <select
           value={operation}
           onChange={(e) => setOperation(e.target.value as Operation)}
@@ -136,13 +131,13 @@ export function QueryBuilder({ client, schema, table }: QueryBuilderProps) {
         </button>
       </div>
 
-      <div className="border-t border-gray-200">
+      <div className="flex-1 flex flex-col border-t border-gray-200 min-h-0">
         <div className="px-4 py-2 bg-gray-50 border-b border-gray-200">
           <h4 className="text-xs font-semibold text-gray-700 font-mono">
             Results
           </h4>
         </div>
-        <div className="min-h-[300px] max-h-[500px] overflow-auto">
+        <div className="flex-1 overflow-auto">
           {state.status === "loading" && (
             <div className="p-8 text-center">
               <div className="inline-flex items-center gap-3 text-slate-600 font-mono text-sm">

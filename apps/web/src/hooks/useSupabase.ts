@@ -6,7 +6,7 @@ const clientCache = new Map<string, SupabaseClient>();
 export function useSupabase(
   url: string,
   apiKey: string,
-  headers?: Record<string, string>
+  headers?: Record<string, string>,
 ): SupabaseClient | null {
   const [client, setClient] = useState<SupabaseClient | null>(() => {
     if (!url || !apiKey) return null;

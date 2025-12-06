@@ -38,13 +38,13 @@ describe("parseRPCArgs", () => {
 
   test("throws error for invalid JSON", () => {
     expect(() => parseRPCArgs('{"invalid": json}')).toThrow(
-      "Failed to parse RPC arguments"
+      "Failed to parse RPC arguments",
     );
   });
 
   test("throws error for missing environment variable", () => {
     expect(() => parseRPCArgs('{"var": $MISSING_VAR}')).toThrow(
-      "Environment variable MISSING_VAR not found"
+      "Environment variable MISSING_VAR not found",
     );
   });
 });

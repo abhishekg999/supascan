@@ -53,7 +53,7 @@ describe("createCLIContext", () => {
     const options = {};
 
     await expect(createCLIContext(options)).rejects.toThrow(
-      "Either provide --url and --key, or use --extract <url>"
+      "Either provide --url and --key, or use --extract <url>",
     );
   });
 
@@ -75,7 +75,7 @@ describe("createCLIContext", () => {
     };
 
     await expect(createCLIContext(options)).rejects.toThrow(
-      "Failed to extract credentials"
+      "Failed to extract credentials",
     );
   });
 

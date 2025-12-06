@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useSupabase } from "../hooks/useSupabase";
-import type { Credentials } from "../types";
+import type { SupascanConfig } from "../types";
 
 interface TargetConfigProps {
-  onConfigured: (credentials: Credentials) => void;
+  onConfigured: (config: SupascanConfig) => void;
 }
 
 export function TargetConfig({ onConfigured }: TargetConfigProps) {
@@ -16,7 +16,7 @@ export function TargetConfig({ onConfigured }: TargetConfigProps) {
   const client = useSupabase(
     url,
     key,
-    Object.keys(headers).length > 0 ? headers : undefined,
+    Object.keys(headers).length > 0 ? headers : undefined
   );
 
   const handleConnect = () => {
@@ -29,6 +29,7 @@ export function TargetConfig({ onConfigured }: TargetConfigProps) {
       url,
       key,
       headers: Object.keys(headers).length > 0 ? headers : undefined,
+      autorun: false,
     });
   };
 
