@@ -1,0 +1,3 @@
+$ bun run build.ts
+Building web app...
+✓ Web app built: dist/index.html

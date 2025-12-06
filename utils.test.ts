@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
-import { err, ok } from "./src/core/result.types";
 import {
   experimentalWarning,
   setExperimentalWarnings,
-} from "./src/cli/formatters/console";
-import { parseRPCArgs } from "./src/cli/utils/args";
+} from "./apps/cli/src/formatters/console";
+import { parseRPCArgs } from "./apps/cli/src/utils/args";
+import { err, ok } from "./packages/core/src/types/result.types";
 
 describe("Result types", () => {
   test("ok returns success result with value", () => {
@@ -38,13 +38,13 @@ describe("parseRPCArgs", () => {
 
   test("throws error for invalid JSON", () => {
     expect(() => parseRPCArgs('{"invalid": json}')).toThrow(
-      "Failed to parse RPC arguments",
+      "Failed to parse RPC arguments"
     );
   });
 
   test("throws error for missing environment variable", () => {
     expect(() => parseRPCArgs('{"var": $MISSING_VAR}')).toThrow(
-      "Environment variable MISSING_VAR not found",
+      "Environment variable MISSING_VAR not found"
     );
   });
 });

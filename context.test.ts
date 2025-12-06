@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
-import { createCLIContext } from "./src/cli/context";
+import { createCLIContext } from "./apps/cli/src/context";
 
 describe("createCLIContext", () => {
   beforeEach(() => {
@@ -53,7 +53,7 @@ describe("createCLIContext", () => {
     const options = {};
 
     await expect(createCLIContext(options)).rejects.toThrow(
-      "Either provide --url and --key, or use --extract <url>",
+      "Either provide --url and --key, or use --extract <url>"
     );
   });
 
@@ -75,7 +75,7 @@ describe("createCLIContext", () => {
     };
 
     await expect(createCLIContext(options)).rejects.toThrow(
-      "Failed to extract credentials",
+      "Failed to extract credentials"
     );
   });
 
