@@ -69,24 +69,6 @@ supascan --url https://your-project.supabase.co --key your-anon-key --dump publi
 supascan --url https://your-project.supabase.co --key your-anon-key --rpc public.my_function --args '{"param": "value"}'
 ```
 
-## What supascan Detects
-
-- **Exposed Tables**: Tables readable without authentication or with weak RLS
-- **Data Leakage**: Estimated row counts for accessible tables
-- **RPC Vulnerabilities**: Publicly callable functions and their parameters
-- **JWT Issues**: Token expiration, role assignments, and claims
-- **Schema Information**: Complete database structure visibility
-
-## Security Considerations
-
-⚠️ **Important**: This tool is for authorized security testing only.
-
-- Only scan databases you own or have explicit permission to test
-- Use on staging/development environments when possible
-- Never use on production databases without proper authorization
-- Be aware that scanning may trigger rate limits or monitoring alerts
-
-Unauthorized database scanning may be illegal in your jurisdiction.
 
 ## Development
 
