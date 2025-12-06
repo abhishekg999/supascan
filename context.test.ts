@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
-import { createCLIContext } from "./src/cli/context";
+import { createCLIContext } from "./apps/cli/src/context";
 
 describe("createCLIContext", () => {
   beforeEach(() => {

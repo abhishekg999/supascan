@@ -1,45 +1,30 @@
 {
   "name": "supascan",
-  "version": "0.1.5",
+  "version": "0.2.0",
   "description": "Automated security scanner for Supabase databases - detect exposed data, analyze RLS policies, and test RPC functions",
   "license": "MIT",
   "author": "Abhishek Govindarasu",
-  "main": "dist/supascan.js",
-  "type": "module",
-  "bin": {
-    "supascan": "dist/supascan.js"
-  },
-  "files": [
-    "dist/supascan.js"
+  "workspaces": [
+    "apps/*",
+    "packages/*"
   ],
-  "keywords": [
-    "supabase",
-    "security",
-    "analysis",
-    "cli",
-    "database",
-    "rls",
-    "postgres",
-    "security-audit",
-    "penetration-testing",
-    "vulnerability-scanner"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/abhishekg999/supascan.git"
-  },
-  "homepage": "https://github.com/abhishekg999/supascan#readme",
-  "bugs": {
-    "url": "https://github.com/abhishekg999/supascan/issues"
-  },
   "scripts": {
-    "lint": "tsc --noEmit",
-    "start": "bun run src/cli/index.ts",
+    "build": "turbo run build",
+    "build:cli": "turbo run build --filter supascan",
+    "build:web": "turbo run build --filter @supascan/web",
+    "build:core": "turbo run build --filter @supascan/core",
+    "build:bundle": "bun run build:cli && mkdir -p dist && cp apps/cli/dist/supascan.js dist/supascan.js && cp apps/cli/package.json dist/package.json",
+    "build:binary": "bun run build:cli && cd apps/cli && bun build --compile --minify --sourcemap src/index.ts --outfile ../../dist/supascan",
+    "dev": "turbo run dev",
+    "dev:web": "cd apps/web && bun run dev",
+    "cli": "cd apps/cli && bun run dev",
+    "start": "node apps/cli/dist/supascan.js",
+    "lint": "turbo run lint",
+    "lint:cli": "turbo run lint --filter supascan",
+    "lint:web": "turbo run lint --filter @supascan/web",
+    "test": "turbo run test",
+    "clean": "rm -rf apps/*/dist packages/*/dist node_modules/.cache .turbo dist",
     "format": "prettier --write .",
-    "build": "bun run build:binary && bun run build:bundle",
-    "build:binary": "bun run build.binary.ts",
-    "build:bundle": "bun run build.node.ts",
-    "test": "bun test",
     "prepublishOnly": "bun run build:bundle"
   },
   "devDependencies": {
@@ -47,17 +32,17 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "knip": "^5.64.3",
-    "prettier": "^3.6.2"
-  },
-  "peerDependencies": {
+    "prettier": "^3.6.2",
+    "turbo": "latest",
     "typescript": "^5.9.3"
   },
-  "dependencies": {
-    "@commander-js/extra-typings": "^14.0.0",
-    "@supabase/supabase-js": "^2.75.0",
-    "commander": "^14.0.1",
-    "picocolors": "^1.1.1",
-    "react": "^19",
-    "react-dom": "^19"
+  "packageManager": "bun@1.1.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/abhishekg999/supascan.git"
+  },
+  "homepage": "https://github.com/abhishekg999/supascan#readme",
+  "bugs": {
+    "url": "https://github.com/abhishekg999/supascan/issues"
   }
 }
