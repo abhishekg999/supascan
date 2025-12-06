@@ -1,6 +1,7 @@
 {
   "name": "supascan",
-  "version": "0.2.0",
+  "version": "0.0.0",
+  "private": true,
   "type": "module",
   "main": "./dist/supascan.js",
   "bin": {

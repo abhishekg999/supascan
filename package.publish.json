@@ -1,0 +1,18 @@
+{
+  "name": "supascan",
+  "version": "0.2.1",
+  "description": "Automated security scanner for Supabase databases - detect exposed data, analyze RLS policies, and test RPC functions",
+  "license": "MIT",
+  "author": "Abhishek Govindarasu",
+  "type": "module",
+  "main": "./supascan.js",
+  "bin": {
+    "supascan": "./supascan.js"
+  },
+  "dependencies": {
+    "@commander-js/extra-typings": "^14.0.0",
+    "@supabase/supabase-js": "^2.75.0",
+    "commander": "^14.0.1",
+    "picocolors": "^1.1.1"
+  }
+}
