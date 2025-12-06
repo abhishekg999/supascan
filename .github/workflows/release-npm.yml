@@ -40,6 +40,6 @@ jobs:
 
       - name: Publish to npm
         if: steps.npm-check.outputs.exists == 'false'
-        run: cd dist && npm publish --access public
+        run: cd dist && bun publish --access public
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
