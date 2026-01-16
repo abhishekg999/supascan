@@ -69,7 +69,6 @@ supascan --url https://your-project.supabase.co --key your-anon-key --dump publi
 supascan --url https://your-project.supabase.co --key your-anon-key --rpc public.my_function --args '{"param": "value"}'
 ```
 
-
 ## Development
 
 ```bash

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -13,16 +13,41 @@
       content="https://github.com/abhishekg999/supascan"
     />
 
-    <title>Supabase Security Analysis</title>
+    <title>Supascan - Table Editor</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
+        darkMode: "class",
         theme: {
           extend: {
             colors: {
-              "supabase-green": "#3ECF8E",
-              "supabase-dark": "#1F2937",
+              "studio-bg": "#171717",
+              "studio-surface": "#1f1f1f",
+              "studio-border": "#2e2e2e",
+              "studio-hover": "#2a2a2a",
+              "studio-active": "#323232",
+              "studio-text": "#ededed",
+              "studio-muted": "#707070",
+              "studio-accent": "#3ECF8E",
+              "studio-yellow": "#F5A623",
+              "studio-red": "#F45B5B",
+            },
+            fontFamily: {
+              mono: [
+                "JetBrains Mono",
+                "SF Mono",
+                "Monaco",
+                "Consolas",
+                "monospace",
+              ],
+              sans: ["Inter", "system-ui", "sans-serif"],
+            },
+            fontSize: {
+              "2xs": ["10px", "14px"],
+              xs: ["11px", "16px"],
+              sm: ["12px", "18px"],
+              base: ["13px", "20px"],
             },
           },
         },
@@ -39,32 +64,37 @@
       }
 
       html,
-      body {
+      body,
+      #root {
         margin: 0;
         padding: 0;
         width: 100%;
         height: 100%;
+        overflow: hidden;
       }
 
       body {
-        font-family:
-          "JetBrains Mono", "SF Mono", Monaco, "Cascadia Code", "Roboto Mono",
-          Consolas, "Courier New", monospace;
+        font-family: "Inter", system-ui, sans-serif;
+        background: #171717;
+        color: #ededed;
       }
 
-      .fade-in {
-        animation: fadeIn 0.6s ease-out;
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
       }
 
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-          transform: translateY(20px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
+      ::-webkit-scrollbar-track {
+        background: #1f1f1f;
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: #404040;
+        border-radius: 4px;
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background: #525252;
       }
     </style>
   </head>
