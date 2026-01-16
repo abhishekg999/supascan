@@ -67,12 +67,10 @@ export function DataGrid({
 
       const handleMouseMove = (moveEvent: MouseEvent) => {
         if (!resizingRef.current) return;
-        const diff = moveEvent.clientX - resizingRef.current.startX;
-        const newWidth = Math.max(50, resizingRef.current.startWidth + diff);
-        setColumnWidths((prev) => ({
-          ...prev,
-          [resizingRef.current!.key]: newWidth,
-        }));
+        const { key, startX, startWidth } = resizingRef.current;
+        const diff = moveEvent.clientX - startX;
+        const newWidth = Math.max(50, startWidth + diff);
+        setColumnWidths((prev) => ({ ...prev, [key]: newWidth }));
       };
 
       const handleMouseUp = () => {

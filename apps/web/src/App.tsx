@@ -73,10 +73,11 @@ export function App() {
       executeQuery({
         operation: "select",
         columns: "*",
-        limit: pagination.state.pageSize,
+        limit: 100,
         offset: 0,
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTabId, client]);
 
   const runTableQuery = (
