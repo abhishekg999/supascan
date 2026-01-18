@@ -9,42 +9,27 @@ import type {
   TableAccessResult,
 } from "./types/supabase.types";
 
-export async function* getSchemas(
-  client: SupabaseClient,
-  nonexistantSchema = "NONEXISTANT_SCHEMA_THAT_SHOULDNT_EXIST",
-): AsyncGenerator<SupabaseEvent, Result<string[]>> {
-  yield { type: "schemas_fetch_started", data: {} };
-
-  const { data, error } = await client
-    .schema(nonexistantSchema)
-    .from("")
-    .select();
-
-  if (data) {
-    return err(new Error("Schema exists, this shouldn't happen"));
-  }
-
-  const schemas =
-    error?.message
-      .split("following: ")[1]
-      ?.split(",")
-      .map((schema) => schema.trim()) ?? [];
-
-  yield { type: "schemas_discovered", data: { schemas } };
-  return ok(schemas);
-}
-
 async function getSwagger(
   client: SupabaseClient,
   schema: string,
 ): Promise<Result<SupabaseSwagger>> {
-  const { data, error } = await client.schema(schema).from("").select();
+  const { supabaseUrl, supabaseKey } = client as unknown as {
+    supabaseUrl: string;
+    supabaseKey: string;
+  };
+  const res = await fetch(`${supabaseUrl}/rest/v1/`, {
+    headers: {
+      apikey: supabaseKey,
+      Accept: "application/openapi+json",
+      "Accept-Profile": schema,
+    },
+  });
 
-  if (error) {
-    return err(error);
+  if (!res.ok) {
+    return err(new Error(`Failed to fetch swagger: ${res.status}`));
   }
 
-  return ok(data as unknown as SupabaseSwagger);
+  return ok((await res.json()) as SupabaseSwagger);
 }
 
 export async function* getTables(
