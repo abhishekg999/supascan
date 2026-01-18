@@ -1,6 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { getSchema, getSchemas as getSchemasNew } from "./schema";
-import { testTablesRead } from "./supabase";
+import {
+  getRPCs,
+  getRPCsWithParameters,
+  getSchemas,
+  getTables,
+  testTablesRead,
+} from "./supabase";
 import type {
   AnalysisResult,
   AnalyzerEvent,
@@ -10,7 +15,6 @@ import type {
 } from "./types/analyzer.types";
 import type { Result } from "./types/result.types";
 import { err, ok } from "./types/result.types";
-import type { RPCFunction } from "./types/supabase.types";
 import type { SupabaseEvent } from "./types/supabase.types";
 
 export async function* analyze(
@@ -21,14 +25,20 @@ export async function* analyze(
 ): AsyncGenerator<AnalyzerEvent | SupabaseEvent, Result<AnalysisResult>> {
   yield { type: "analysis_started", data: {} };
 
-  yield { type: "schemas_fetch_started", data: {} };
-  const schemasResult = await getSchemasNew(client);
-
-  if (!schemasResult.success) {
-    return err(schemasResult.error);
+  const schemasGen = getSchemas(client);
+  let schemasResult;
+  while (true) {
+    const next = await schemasGen.next();
+    if (next.done) {
+      schemasResult = next.value;
+      break;
+    }
+    yield next.value;
   }
 
-  yield { type: "schemas_discovered", data: { schemas: schemasResult.value } };
+  if (!schemasResult || !schemasResult.success) {
+    return err(schemasResult?.error ?? new Error("Failed to fetch schemas"));
+  }
 
   const schemasToAnalyze = options.schema
     ? [options.schema]
@@ -36,30 +46,40 @@ export async function* analyze(
 
   const schemaDetails: Record<string, SchemaAnalysis> = {};
 
-  for (const schemaName of schemasToAnalyze) {
-    yield { type: "schema_analysis_started", data: { schema: schemaName } };
-    yield { type: "swagger_fetch_started", data: { schema: schemaName } };
+  for (const schema of schemasToAnalyze) {
+    yield { type: "schema_analysis_started", data: { schema } };
 
-    const schemaResult = await getSchema(client, schemaName);
+    const tablesGen = getTables(client, schema);
+    let tablesResult;
+    while (true) {
+      const next = await tablesGen.next();
+      if (next.done) {
+        tablesResult = next.value;
+        break;
+      }
+      yield next.value;
+    }
 
-    if (!schemaResult.success) {
+    const rpcsGen = getRPCs(client, schema);
+    let rpcsResult;
+    while (true) {
+      const next = await rpcsGen.next();
+      if (next.done) {
+        rpcsResult = next.value;
+        break;
+      }
+      yield next.value;
+    }
+
+    const rpcFunctionsResult = await getRPCsWithParameters(client, schema);
+
+    if (!tablesResult?.success || !rpcsResult?.success) {
       continue;
     }
 
-    yield { type: "swagger_fetched", data: { schema: schemaName } };
+    const tables = tablesResult.value;
 
-    const dbSchema = schemaResult.value.schema;
-    const tables = dbSchema.tables.map((t) => t.name);
-    const rpcs = dbSchema.rpcs.map((r) => r.name);
-    const rpcFunctions: RPCFunction[] = dbSchema.rpcs.map((r) => ({
-      name: r.name,
-      parameters: r.parameters,
-    }));
-
-    yield { type: "tables_discovered", data: { schema: schemaName, tables } };
-    yield { type: "rpcs_discovered", data: { schema: schemaName, rpcs } };
-
-    const accessGen = testTablesRead(client, schemaName, tables);
+    const accessGen = testTablesRead(client, schema, tables);
     let accessResult;
     while (true) {
       const next = await accessGen.next();
@@ -76,18 +96,16 @@ export async function* analyze(
 
     const analysis: SchemaAnalysis = {
       tables,
-      rpcs,
-      rpcFunctions,
+      rpcs: rpcsResult.value,
+      rpcFunctions: rpcFunctionsResult.success ? rpcFunctionsResult.value : [],
       tableAccess: accessResult.value,
-      databaseSchema: dbSchema,
-      introspectionMethod: schemaResult.value.method,
     };
 
-    schemaDetails[schemaName] = analysis;
+    schemaDetails[schema] = analysis;
 
     yield {
       type: "schema_analysis_completed",
-      data: { schema: schemaName, analysis },
+      data: { schema, analysis },
     };
   }
 

@@ -1,5 +1,4 @@
 import type { Event } from "./event.types";
-import type { DatabaseSchema, IntrospectionMethod } from "./schema.types";
 import type { RPCFunction, TableAccessResult } from "./supabase.types";
 
 export type SchemaAnalysis = {
@@ -7,8 +6,6 @@ export type SchemaAnalysis = {
   rpcs: string[];
   rpcFunctions: RPCFunction[];
   tableAccess: Record<string, TableAccessResult>;
-  databaseSchema?: DatabaseSchema;
-  introspectionMethod?: IntrospectionMethod;
 };
 
 export type JWTInfo = {
