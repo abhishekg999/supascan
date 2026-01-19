@@ -24,11 +24,19 @@ export async function* getSchemas(
     return err(new Error("Schema exists, this shouldn't happen"));
   }
 
-  const schemas =
+  const fromMessage =
     error?.message
       .split("following: ")[1]
       ?.split(",")
       .map((schema) => schema.trim()) ?? [];
+
+  const fromHint =
+    (error as { hint?: string })?.hint
+      ?.split("exposed: ")[1]
+      ?.split(",")
+      .map((schema) => schema.trim()) ?? [];
+
+  const schemas = fromMessage.length > 0 ? fromMessage : fromHint;
 
   yield { type: "schemas_discovered", data: { schemas } };
   return ok(schemas);
@@ -40,11 +48,68 @@ async function getSwagger(
 ): Promise<Result<SupabaseSwagger>> {
   const { data, error } = await client.schema(schema).from("").select();
 
-  if (error) {
-    return err(error);
+  if (!error && data) {
+    return ok(data as unknown as SupabaseSwagger);
   }
 
-  return ok(data as unknown as SupabaseSwagger);
+  const schemaCacheResult = await fetchSchemaCache(client, schema);
+  if (schemaCacheResult.success) {
+    return schemaCacheResult;
+  }
+
+  return err(error ?? new Error("Failed to fetch schema"));
+}
+
+async function fetchSchemaCache(
+  client: SupabaseClient,
+  schema: string,
+): Promise<Result<SupabaseSwagger>> {
+  const { supabaseUrl, supabaseKey } = client as unknown as {
+    supabaseUrl: string;
+    supabaseKey: string;
+  };
+
+  try {
+    const res = await fetch(`${supabaseUrl}/rest-admin/v1/schema_cache`, {
+      headers: { apikey: supabaseKey },
+    });
+
+    if (!res.ok) {
+      return err(new Error(`schema_cache fetch failed: ${res.status}`));
+    }
+
+    const cache = (await res.json()) as {
+      dbTables?: Array<
+        [
+          { qiSchema: string; qiName: string },
+          { tableName: string; tableSchema: string },
+        ]
+      >;
+      dbRoutines?: Array<[{ qiSchema: string; qiName: string }, unknown]>;
+    };
+
+    const paths: Record<string, unknown> = {};
+
+    for (const [meta, info] of cache.dbTables ?? []) {
+      if (meta.qiSchema === schema) {
+        paths[`/${meta.qiName}`] = { get: {}, post: {} };
+      }
+    }
+
+    for (const [meta] of cache.dbRoutines ?? []) {
+      if (meta.qiSchema === schema) {
+        paths[`/rpc/${meta.qiName}`] = { post: {} };
+      }
+    }
+
+    if (Object.keys(paths).length === 0) {
+      return err(new Error(`No tables found for schema: ${schema}`));
+    }
+
+    return ok({ swagger: "2.0", paths } as SupabaseSwagger);
+  } catch (e) {
+    return err(e instanceof Error ? e : new Error(String(e)));
+  }
 }
 
 export async function* getTables(
