@@ -6,6 +6,7 @@ import { DataGrid } from "./components/table/DataGrid";
 import { Toolbar } from "./components/table/Toolbar";
 import { RPCView } from "./components/rpc/RPCView";
 import { TargetConfig } from "./components/TargetConfig";
+import { useAccessTests } from "./hooks/useAccessTests";
 import { useAnalysis } from "./hooks/useAnalysis";
 import { usePagination } from "./hooks/usePagination";
 import { useSupabase } from "./hooks/useSupabase";
@@ -43,16 +44,14 @@ export function App() {
   );
 
   useEffect(() => {
-    if (
-      config?.autorun &&
-      client &&
-      url &&
-      key &&
-      analysisState.status === "idle"
-    ) {
-      runAnalysis();
+    if (client && url && key && analysisState.status === "idle") {
+      runAnalysis({ skipAccessTest: true });
     }
-  }, [config?.autorun, client, url, key, analysisState.status, runAnalysis]);
+  }, [client, url, key, analysisState.status, runAnalysis]);
+
+  const analysisData =
+    analysisState.status === "success" ? analysisState.data : null;
+  const accessMap = useAccessTests(client, analysisData);
 
   const activeTab = tabs.find((t) => t.id === activeTabId);
   const activeTableTab = activeTab?.type === "table" ? activeTab : null;
@@ -191,7 +190,7 @@ export function App() {
             {analysisState.error.message}
           </p>
           <button
-            onClick={() => runAnalysis()}
+            onClick={() => runAnalysis({ skipAccessTest: true })}
             className="px-3 py-1.5 bg-studio-accent text-black rounded text-sm font-medium hover:opacity-90"
           >
             Retry
@@ -213,6 +212,7 @@ export function App() {
     <div className="h-screen w-screen flex bg-studio-bg">
       <Sidebar
         analysis={analysis}
+        accessMap={accessMap}
         selectedSchema={selectedSchema}
         onSchemaChange={setSelectedSchema}
         onTableSelect={openTable}

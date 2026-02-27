@@ -15,13 +15,13 @@ import type {
 } from "./types/analyzer.types";
 import type { Result } from "./types/result.types";
 import { err, ok } from "./types/result.types";
-import type { SupabaseEvent } from "./types/supabase.types";
+import type { SupabaseEvent, TableAccessResult } from "./types/supabase.types";
 
 export async function* analyze(
   client: SupabaseClient,
   url: string,
   key: string,
-  options: { schema?: string } = {},
+  options: { schema?: string; skipAccessTest?: boolean } = {},
 ): AsyncGenerator<AnalyzerEvent | SupabaseEvent, Result<AnalysisResult>> {
   yield { type: "analysis_started", data: {} };
 
@@ -79,26 +79,32 @@ export async function* analyze(
 
     const tables = tablesResult.value;
 
-    const accessGen = testTablesRead(client, schema, tables);
-    let accessResult;
-    while (true) {
-      const next = await accessGen.next();
-      if (next.done) {
-        accessResult = next.value;
-        break;
-      }
-      yield next.value;
-    }
+    let tableAccess: Record<string, TableAccessResult> = {};
 
-    if (!accessResult?.success) {
-      continue;
+    if (!options.skipAccessTest) {
+      const accessGen = testTablesRead(client, schema, tables);
+      let accessResult;
+      while (true) {
+        const next = await accessGen.next();
+        if (next.done) {
+          accessResult = next.value;
+          break;
+        }
+        yield next.value;
+      }
+
+      if (!accessResult?.success) {
+        continue;
+      }
+
+      tableAccess = accessResult.value;
     }
 
     const analysis: SchemaAnalysis = {
       tables,
       rpcs: rpcsResult.value,
       rpcFunctions: rpcFunctionsResult.success ? rpcFunctionsResult.value : [],
-      tableAccess: accessResult.value,
+      tableAccess,
     };
 
     schemaDetails[schema] = analysis;

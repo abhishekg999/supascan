@@ -1,8 +1,10 @@
 import type { AnalysisResult, RPCFunction } from "@supascan/core";
+import type { AccessMap } from "../../hooks/useAccessTests";
 import { useState } from "react";
 
 interface SidebarProps {
   analysis: AnalysisResult;
+  accessMap: AccessMap;
   selectedSchema: string;
   onSchemaChange: (schema: string) => void;
   onTableSelect: (schema: string, table: string) => void;
@@ -12,6 +14,7 @@ interface SidebarProps {
 
 export function Sidebar({
   analysis,
+  accessMap,
   selectedSchema,
   onSchemaChange,
   onTableSelect,
@@ -66,12 +69,15 @@ export function Sidebar({
             Tables ({filteredTables.length})
           </div>
           {filteredTables.map((table) => {
-            const access = schemaData?.tableAccess[table];
+            const access =
+              accessMap[selectedSchema]?.[table] ??
+              schemaData?.tableAccess[table];
             const isActive = activeTabId === `table:${selectedSchema}.${table}`;
-            const badge =
-              access?.status === "readable"
+            const badge = !access
+              ? { text: "...", color: "text-studio-muted animate-pulse" }
+              : access.status === "readable"
                 ? { text: "ACCESSIBLE", color: "text-studio-accent" }
-                : access?.status === "empty"
+                : access.status === "empty"
                   ? { text: "EMPTY", color: "text-studio-yellow" }
                   : { text: "DENIED", color: "text-studio-red" };
 
