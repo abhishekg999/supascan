@@ -12,7 +12,7 @@ export function useAnalysis(
   });
 
   const execute = useCallback(
-    async (options: { schema?: string } = {}) => {
+    async (options: { schema?: string; skipAccessTest?: boolean } = {}) => {
       if (!client) {
         setState({
           status: "error",

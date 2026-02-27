@@ -1,6 +1,6 @@
 # supascan
 
-[![Tests](https://github.com/abhishekg999/supascan/actions/workflows/tests.yml/badge.svg)](https://github.com/abhishekg999/supascan/actions/workflows/tests.yml) [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/abhishekg999/supascan/master/LICENCE) [![npm](https://img.shields.io/npm/v/supascan)](https://www.npmjs.com/package/supascan)
+[Tests](https://github.com/abhishekg999/supascan/actions/workflows/tests.yml) [License](https://raw.githubusercontent.com/abhishekg999/supascan/master/LICENCE) [npm](https://www.npmjs.com/package/supascan)
 
 Security scanner for Supabase. Point it at any site using Supabase and it extracts credentials, discovers schemas, tests RLS policies, and dumps exposed data.
 
@@ -10,7 +10,11 @@ Security scanner for Supabase. Point it at any site using Supabase and it extrac
 bun install -g supascan
 ```
 
-or `npm install -g supascan`
+or
+
+```bash
+npm install -g supascan
+```
 
 ## Usage
 
@@ -19,12 +23,10 @@ or `npm install -g supascan`
 Point supascan at a site and it automatically extracts Supabase credentials from HTML/JS:
 
 ```bash
-supascan --extract https://example.com --html
+supascan -x https://example.com --html
 ```
 
-This fetches the page, parses inline scripts and external JS bundles, extracts the Supabase URL and anon key, runs a full security scan, and opens an interactive HTML report.
-
-<!-- screenshot: html-report.png -->
+This fetches the page, parses inline scripts and external JS bundles, tries to extract the Supabase URL and anon key, runs a full security scan, and opens an interactive HTML report.
 
 ### Manual credentials
 
@@ -114,8 +116,6 @@ The `--html` flag generates an interactive report with:
 - Table explorer with pagination
 - RPC tester with parameter forms
 - Live query interface against the target
-
-<!-- screenshot: html-tables.png -->
 
 ## Options
 
